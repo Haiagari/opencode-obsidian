@@ -272,9 +272,7 @@ n8n is the Bunker's async "nervous system." It runs on Docker and exposes an MCP
 | Health Check | 2 | 🟢 Active | System health check every 5 min |
 | Ultimate Alerter | 2 | 🟢 Active | Multi-channel alert via webhook |
 | Dead Letter Queue | 5 | ⚪ Inactive | Error trigger: captures all workflow errors |
-| AOC v4 Enterprise | 37* | ⚪ Inactive | Pipeline: webhook → AI triage → GitHub → ... |
-
-*Note on AOC v4 node count: Verify in `automation/n8n-lab/workflows/aoc-v4-enterprise.json`. If node count differs from 37, update this table and add a diagram note: "Diagram simplified — see workflows JSON for complete flow."
+| AOC v4 Enterprise | 37 | ⚪ Inactive | Pipeline: webhook → AI triage → GitHub → ... |
 
 ### AOC v4 Enterprise Pipeline
 
@@ -308,6 +306,8 @@ flowchart TD
     SLY & SLN & TGY & TGN & DCY & DCN --> WA[Write Audit]
     WA --> FS[Final Status]
 ```
+
+Diagrama simplificado (26 nodos representativos) — el workflow real tiene 37 nodos, ver `automation/n8n-lab/workflows/bunker-aoc-v4-enterprise.json` para el flujo completo con todos los pasos de validación y logging por canal.
 
 ### Dead Letter Queue
 
