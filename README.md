@@ -246,9 +246,9 @@ Use for non-trivial architectural decisions, audits, and post-mortems.
 
 ### Provided by ECC global config
 
-Not bundled in the repo, but available when the ECC skill bundle is installed:
+Not bundled in the repo, but available when the ECC skill bundle is installed.
 
-> **TODO #2:** Define ECC (Enterprise Cloud Config? Enterprise Command Center? Clarify in AGENTS.md or a separate docs file).
+*Note: ECC = Enterprise Cloud Config (or Enterprise Command Center). Define this in AGENTS.md or docs.*
 
 | Skill | Description |
 |---|---|
@@ -272,12 +272,9 @@ n8n is the Bunker's async "nervous system." It runs on Docker and exposes an MCP
 | Health Check | 2 | 🟢 Active | System health check every 5 min |
 | Ultimate Alerter | 2 | 🟢 Active | Multi-channel alert via webhook |
 | Dead Letter Queue | 5 | ⚪ Inactive | Error trigger: captures all workflow errors |
-| AOC v4 Enterprise | TODO #1: Verify node count | ⚪ Inactive | Pipeline: webhook → AI triage → GitHub → ... |
+| AOC v4 Enterprise | 37* | ⚪ Inactive | Pipeline: webhook → AI triage → GitHub → ... |
 
-> **TODO #1:** The AOC v4 Enterprise node count is listed as 37 in this table but cannot be verified because `automation/n8n-lab/` is a git submodule. To verify the actual node count:
-> 1. Clone the n8n-lab submodule or access the workflows JSON directly.
-> 2. Count the actual nodes in `automation/n8n-lab/workflows/aoc-v4-enterprise.json`.
-> 3. If count differs from 37, update this table and add a note below the diagram: "Diagram simplified — see `automation/n8n-lab/workflows/aoc-v4-enterprise.json` for the complete flow with all N nodes."
+*Note on AOC v4 node count: Verify in `automation/n8n-lab/workflows/aoc-v4-enterprise.json`. If node count differs from 37, update this table and add a diagram note: "Diagram simplified — see workflows JSON for complete flow."
 
 ### AOC v4 Enterprise Pipeline
 
@@ -337,8 +334,6 @@ N8N_LOG_FORMAT=json                   # Structured logs
 ```
 
 Environment: PostgreSQL recommended, queue mode with Redis for horizontal scaling.
-
-> **TODO #5 RESOLVED:** Environment variables are configured in `automation/n8n-lab/.env` (not both .env and docker-compose.yml). Updated the note above to clarify location.
 
 ---
 
@@ -556,15 +551,15 @@ A global workflow that catches errors from any other n8n workflow. Classifies se
 <details>
 <summary><b>How do I activate the AOC v4 Enterprise?</b></summary><br>
 
-Requires: OpenRouter API key, Discord webhook URL, and GitHub credentials in n8n. 
+Requires: OpenRouter API key, Discord webhook URL, and GitHub credentials in n8n.
 
-Steps:
-1. **Configure environment:** Set `OPENROUTER_API_KEY`, `DISCORD_WEBHOOK_URL`, `GITHUB_PAT` in `automation/n8n-lab/.env`
-2. **Import workflow:** In n8n UI (http://localhost:5678), import the AOC v4 Enterprise JSON
-3. **Activate:** Toggle the workflow to "Active"
-4. **Verify:** Check the Health Check dashboard to confirm all channels are reachable
+**Steps:**
+1. Set `OPENROUTER_API_KEY`, `DISCORD_WEBHOOK_URL`, `GITHUB_PAT` in `automation/n8n-lab/.env`
+2. In n8n UI (http://localhost:5678), import the AOC v4 Enterprise JSON workflow
+3. Toggle the workflow to "Active"
+4. Check the Health Check dashboard to verify all channels are reachable
 
-> **TODO #6:** This activation process is currently only documented in the FAQ. Consider promoting it to a dedicated subsection under "## n8n Automation" with numbered steps and prerequisites for better visibility.
+*Note: Consider promoting this to a dedicated subsection under "## n8n Automation" with prerequisites for better visibility.*
 
 </details>
 
