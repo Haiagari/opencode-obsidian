@@ -199,12 +199,11 @@ Configurable at `skills/autoresearch/references/program.md`:
 - Confidence scoring (high/medium/low)
 - Domain-specific rules
 
-```mermaid
-flowchart LR
-    A["Round 1 — Broad search\nDecompose into 3-5 angles\n2-3 queries each via Exa"] --> B["Round 2 — Gap fill\nTargeted searches for\ncontradictions & gaps"]
-    B --> C["Round 3 — Synthesis\nOne more pass if gaps remain"]
-    C --> D["File to wiki"]
-```
+**Research flow:**
+1. Round 1 — Broad search: Decompose into 3-5 angles, 2-3 queries each via Exa
+2. Round 2 — Gap fill: Targeted searches for contradictions & gaps
+3. Round 3 — Synthesis: One more pass if gaps remain
+4. File to wiki
 
 URL validation + content sanitization: rejects `file://` / `javascript://` / RFC1918, escapes `[[` in external sources, truncates to 50KB.
 
@@ -276,51 +275,32 @@ n8n is the Bunker's async "nervous system." It runs on Docker and exposes an MCP
 
 ### AOC v4 Enterprise Pipeline
 
-```mermaid
-flowchart TD
-    W[Webhook] --> IG[Ingress Guard]
-    IG --> V{Valid?}
-    V -- No --> RR[Rejected Response]
-    V -- Yes --> RI[Redis Idempotency]
-    RI --> RP{Replay?}
-    RP -- Yes --> CR[Cached Response]
-    RP -- No --> AI["AI Triage (OpenRouter)"]
-    AI --> PD[Parse AI Decision]
-    PD --> CD{Create?}
-    CD -- Create --> GH[GitHub Issue]
-    CD -- Review --> HITL[Issue HITL]
-    CD -- Emergency --> EQ[Emergency Queue]
-    CD -- Duplicate --> SK[Skip]
-    GH --> BN[Build Notification]
-    HITL --> BN
-    EQ --> BN
-    BN --> SL{Slack?}
-    SL -- Yes --> SLY[Send Slack]
-    SL -- No --> SLN[Skip]
-    BN --> TG{Telegram?}
-    TG -- Yes --> TGY[Send Telegram]
-    TG -- No --> TGN[Skip]
-    BN --> DC{Discord?}
-    DC -- Yes --> DCY[Send Discord]
-    DC -- No --> DCN[Skip]
-    SLY & SLN & TGY & TGN & DCY & DCN --> WA[Write Audit]
-    WA --> FS[Final Status]
-```
+**Flow steps:**
 
-Diagrama simplificado (26 nodos representativos) — el workflow real tiene 37 nodos, ver `automation/n8n-lab/workflows/bunker-aoc-v4-enterprise.json` para el flujo completo con todos los pasos de validación y logging por canal.
+1. **Ingress** — Webhook received → Ingress Guard validates → Check for replay via Redis
+2. **Decision** — If replay detected: return cached response
+3. **Triage** — If new: send to AI Triage (OpenRouter) for classification
+4. **Routing** — Parse AI decision:
+   - Create issue? → GitHub API
+   - Review needed? → HITL queue
+   - Emergency? → Emergency queue
+   - Duplicate? → Skip
+5. **Notifications** — Build notification message → Send via Slack, Telegram, Discord (parallel)
+6. **Audit** — Write audit log → Return final status
+
+**Diagram simplified (26 nodes represented) — workflow real tiene 37 nodos, ver `automation/n8n-lab/workflows/bunker-aoc-v4-enterprise.json` para el flujo completo con todos los pasos de validación y logging por canal.**
 
 ### Dead Letter Queue
 
-```mermaid
-flowchart TD
-    ET["Error Trigger (global)"] --> NE[Normalize Error]
-    NE --> C{Critical?}
-    C -- Critical --> N["Notify (placeholder)"]
-    N --> S1[Store in DLQ]
-    C -- Warning --> S2[Store in DLQ]
-```
+**Flow:**
 
-Catches errors from **any** workflow in the instance. Classifies severity (CRITICAL for auth/permissions/timeout). Persists the last 200 errors in `staticData`.
+- Global Error Trigger captures errors from any workflow
+- Normalizes error context
+- Classifies severity: CRITICAL (auth, timeout, permissions) vs WARNING
+- Stores in `staticData` (last 200 errors)
+- Triggers notifications on CRITICAL
+
+Catches errors from **any** workflow in the instance. Persists the last 200 errors for review and audit.
 
 ### Infrastructure
 
@@ -341,37 +321,36 @@ Environment: PostgreSQL recommended, queue mode with Redis for horizontal scalin
 
 ### Vault flow
 
-```mermaid
-flowchart LR
-    R[".raw/\n(immutable sources)"] --> I["wiki-ingest\n(OpenCode skill)"]
-    I --> WK["wiki/\n(persistent knowledge)"]
 ```
-
-```
-wiki/
-├── hot.md       recent context (~500 words)
-├── index.md     master catalog
-├── log.md       append-only operation log
-├── sources/     source summaries
-├── entities/    people, orgs, products
-├── concepts/    ideas, patterns, frameworks
-├── meta/        dashboard, handovers, evidence
-└── ...          comparisons, questions, projects
+.raw/ (immutable sources)
+  ↓
+wiki-ingest (OpenCode skill)
+  ↓ (extracts entities, concepts, sources)
+wiki/ (persistent knowledge)
+  ├── hot.md (recent context ~500 words)
+  ├── index.md (master catalog)
+  ├── log.md (append-only operation log)
+  ├── sources/ (external source summaries)
+  ├── entities/ (people, orgs, products)
+  ├── concepts/ (ideas, patterns, frameworks)
+  ├── meta/ (dashboards, handovers, evidence)
+  └── ... (comparisons, questions, projects)
 ```
 
 `wiki-ingest` extracts entities, concepts, and sources, then creates/updates pages and cross-references.
 
 ### Async automation
 
-```mermaid
-flowchart LR
-    OC["OpenCode (skills)"] -- n8n-mcp bridge --> N8N["n8n Docker\n(localhost:5678)"]
-    N8N --> WH["Webhooks → AOC pipeline → GitHub Issues"]
-    N8N --> HC["Schedule → Health Check (5 min)"]
-    N8N --> ER["Schedule → Emergency Reprocessor (5 min)"]
-    N8N --> DLQ["Error Trigger → Dead Letter Queue"]
-    WH --> NOTIF["Slack / Telegram / Discord"]
-    DLQ --> NOTIF
+```
+OpenCode (skills)
+  ↓ (n8n-mcp bridge)
+n8n Docker (localhost:5678)
+  ├→ Webhooks → AOC pipeline → GitHub Issues
+  ├→ Schedule → Health Check (5 min)
+  ├→ Schedule → Emergency Reprocessor (5 min)
+  └→ Error Trigger → Dead Letter Queue
+       ↓
+    Notifications (Slack / Telegram / Discord)
 ```
 
 ---
@@ -382,9 +361,15 @@ The Bunker includes a fast, zero-dependency text retrieval system using BM25 —
 
 OpenCode (the agent) receives the ranked chunks and applies its own model to understand and synthesize the answer. **The agent is the only intelligence in the loop.**
 
-```mermaid
-flowchart LR
-    Q[Query] --> B["BM25\n(wiki page chunks)"] --> T["Top 5 results"] --> S["OpenCode reads & synthesizes"]
+**Retrieval flow:**
+```
+Query
+  ↓
+BM25 (wiki page chunks)
+  ↓
+Top 5 results (ranked by relevance)
+  ↓
+OpenCode reads & synthesizes
 ```
 
 ### Performance
@@ -558,8 +543,6 @@ Requires: OpenRouter API key, Discord webhook URL, and GitHub credentials in n8n
 2. In n8n UI (http://localhost:5678), import the AOC v4 Enterprise JSON workflow
 3. Toggle the workflow to "Active"
 4. Check the Health Check dashboard to verify all channels are reachable
-
-*Note: Consider promoting this to a dedicated subsection under "## n8n Automation" with prerequisites for better visibility.*
 
 </details>
 
