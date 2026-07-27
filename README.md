@@ -21,11 +21,11 @@
 </p>
 
 <p align="center">
-  Based on the <a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f">LLM Wiki pattern</a> by Andrej Karpathy · forked from <a href="https://github.com/AgriciDaniel/claude-obsidian">claude-obsidian</a> · independently evolved into an operations-first automation system.
+  Based on the <a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f">LLM Wiki pattern</a> by Andrej Karpathy · forked from <a href="https://github.com/AgriciDaniel/claude-obsidian">claude-obsidian</a>
 </p>
 
 <p align="center">
-  <img src="wiki/meta/descripcion.png" alt="Bunker OS Overview" width="100%" />
+  <img src="wiki/meta/description.png" alt="Bunker OS Overview" width="100%" />
 </p>
 
 <br>
@@ -67,6 +67,8 @@
 | Multi-methodology | ❌ (generic only) | LYT / PARA / Zettelkasten | ❌ |
 | Multi-writer safe | ❌ (single-writer) | Per-file locks | ❌ |
 | Open source | MIT | MIT | Freemium |
+
+> **Note on Smart Connections:** This column includes [Smart Connections](https://github.com/brianpetro/obsidian-smart-connections), an Obsidian community plugin that enables semantic search and RAG over vault notes. It is included for comparison as a complementary tool that works alongside Bunker OS. Bunker OS uses BM25 (keyword-based); Smart Connections uses vector embeddings (semantic). Both can run in the same vault.
 
 > Bunker OS does not compete with claude-obsidian — it complements it. Where claude-obsidian is a researcher, Bunker OS is an operator. Both can coexist pointing at the same vault.
 
@@ -167,8 +169,12 @@ When you need context:
 | `what do you know about X` | Query the wiki: hot → index → pages → synthesize |
 | `lint the wiki` | Health check: orphans, dead links, gaps |
 | `save this` | Save current conversation as a wiki note |
+| `wiki [setup/scaffold]` | Set up vault structure or create new knowledge base |
+| `defuddle https://...` | Clean web page before ingesting; remove ads/boilerplate |
 | `canvas` | Open or create visual canvas |
 | `canvas add image [path]` | Add image to canvas |
+| `index evidence` | Index audit artifacts (report.zip, JSON) with SHA256 checksums |
+| `obsidian bases` | Create/edit Obsidian Bases (.base) database views |
 
 ### CLI Scripts
 
@@ -242,6 +248,8 @@ Use for non-trivial architectural decisions, audits, and post-mortems.
 
 Not bundled in the repo, but available when the ECC skill bundle is installed:
 
+> **TODO #2:** Define ECC (Enterprise Cloud Config? Enterprise Command Center? Clarify in AGENTS.md or a separate docs file).
+
 | Skill | Description |
 |---|---|
 | `code-review` | Code quality review |
@@ -264,7 +272,12 @@ n8n is the Bunker's async "nervous system." It runs on Docker and exposes an MCP
 | Health Check | 2 | 🟢 Active | System health check every 5 min |
 | Ultimate Alerter | 2 | 🟢 Active | Multi-channel alert via webhook |
 | Dead Letter Queue | 5 | ⚪ Inactive | Error trigger: captures all workflow errors |
-| AOC v4 Enterprise | 37 | ⚪ Inactive | Pipeline: webhook → AI triage → GitHub → ... |
+| AOC v4 Enterprise | TODO #1: Verify node count | ⚪ Inactive | Pipeline: webhook → AI triage → GitHub → ... |
+
+> **TODO #1:** The AOC v4 Enterprise node count is listed as 37 in this table but cannot be verified because `automation/n8n-lab/` is a git submodule. To verify the actual node count:
+> 1. Clone the n8n-lab submodule or access the workflows JSON directly.
+> 2. Count the actual nodes in `automation/n8n-lab/workflows/aoc-v4-enterprise.json`.
+> 3. If count differs from 37, update this table and add a note below the diagram: "Diagram simplified — see `automation/n8n-lab/workflows/aoc-v4-enterprise.json` for the complete flow with all N nodes."
 
 ### AOC v4 Enterprise Pipeline
 
@@ -314,6 +327,8 @@ Catches errors from **any** workflow in the instance. Classifies severity (CRITI
 
 ### Infrastructure
 
+Configure environment variables in `automation/n8n-lab/.env`:
+
 ```yaml
 N8N_CONCURRENCY_PRODUCTION_LIMIT=10   # Prevent OOM on spikes
 EXECUTIONS_DATA_PRUNE=true            # Auto cleanup
@@ -322,6 +337,8 @@ N8N_LOG_FORMAT=json                   # Structured logs
 ```
 
 Environment: PostgreSQL recommended, queue mode with Redis for horizontal scaling.
+
+> **TODO #5 RESOLVED:** Environment variables are configured in `automation/n8n-lab/.env` (not both .env and docker-compose.yml). Updated the note above to clarify location.
 
 ---
 
@@ -465,7 +482,7 @@ opencode-obsidian/
 │   ├── wiki-integrity.sh         Integrity scan
 │   └── evidence-index.sh         Evidence indexing
 ├── automation/
-│   └── n8n-lab/                  Docker + workflows
+│   └── n8n-lab/                  Docker + workflows (submodule)
 │       ├── docker-compose.yml
 │       ├── .env
 │       └── workflows/
@@ -497,43 +514,58 @@ opencode-obsidian/
 <details>
 <summary><b>What's the difference between Bunker OS and claude-obsidian?</b></summary><br>
 
-Both projects share a common origin but diverged in purpose. claude-obsidian is a second brain for PKM/research. Bunker OS is an operations system with n8n automation, security, alerts, evidence, and a full remediation pipeline. They complement each other.
+Both projects share a common origin but diverged in purpose. claude-obsidian is a second brain for PKM/research. Bunker OS is an operations system with n8n automation, security, alerts, evidence, and dead letter queue handling. Use Bunker OS when you need async workflows + audit trails. Use claude-obsidian when you want to focus on research and note organization.
+
 </details>
 
 <details>
 <summary><b>Can I use Bunker OS without OpenCode?</b></summary><br>
 
-Technically yes (scripts are bash, tests are Makefile, n8n is Docker), but the real value is in the OpenCode skills. Without OpenCode you lose autoresearch, think, wiki-ingest, and wiki-query.
+Technically yes (scripts are bash and Python, tests are Makefile, n8n is Docker), but the real value is in the OpenCode skills. Without OpenCode you lose autoresearch, think, wiki-ingest, and wiki-query.
+
 </details>
 
 <details>
 <summary><b>Where is data stored?</b></summary><br>
 
 Everything is local. The vault is a folder of Markdown files on your disk. n8n runs on local Docker. No cloud data.
+
 </details>
 
 <details>
 <summary><b>How do I sync across devices?</b></summary><br>
 
 The vault is a plain folder of files. Use Obsidian Sync, Syncthing, iCloud, Dropbox, or git.
+
 </details>
 
 <details>
 <summary><b>How do I add a source to the wiki?</b></summary><br>
 
 Drop the file in `.raw/` and say `ingest [filename]`. The skill extracts entities and concepts, creates pages, and updates indexes.
+
 </details>
 
 <details>
 <summary><b>What is the Dead Letter Queue?</b></summary><br>
 
 A global workflow that catches errors from any other n8n workflow. Classifies severity and persists to `staticData` for later review.
+
 </details>
 
 <details>
 <summary><b>How do I activate the AOC v4 Enterprise?</b></summary><br>
 
-Requires: OpenRouter API key, Discord webhook URL, and GitHub credentials in n8n. Configure env vars in `.env`, import the JSON in the n8n UI, and activate it.
+Requires: OpenRouter API key, Discord webhook URL, and GitHub credentials in n8n. 
+
+Steps:
+1. **Configure environment:** Set `OPENROUTER_API_KEY`, `DISCORD_WEBHOOK_URL`, `GITHUB_PAT` in `automation/n8n-lab/.env`
+2. **Import workflow:** In n8n UI (http://localhost:5678), import the AOC v4 Enterprise JSON
+3. **Activate:** Toggle the workflow to "Active"
+4. **Verify:** Check the Health Check dashboard to confirm all channels are reachable
+
+> **TODO #6:** This activation process is currently only documented in the FAQ. Consider promoting it to a dedicated subsection under "## n8n Automation" with numbered steps and prerequisites for better visibility.
+
 </details>
 
 <details>
@@ -542,6 +574,7 @@ Requires: OpenRouter API key, Discord webhook URL, and GitHub credentials in n8n
 ```bash
 python3 scripts/retrieve.py build
 ```
+
 </details>
 
 <details>
@@ -550,6 +583,7 @@ python3 scripts/retrieve.py build
 ```bash
 make test    # 430 tests
 ```
+
 </details>
 
 ---
@@ -589,7 +623,7 @@ make test    # Run tests before pushing
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for full text. Free for personal and commercial use.
+MIT License. See [LICENSE](LICENSE) for full text.
 
 ---
 
