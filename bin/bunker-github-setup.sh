@@ -1,7 +1,7 @@
 #!/bin/bash
 # bunker-github-setup.sh — Aplica la configuración de GitHub (About, Tags, Branch Protection)
 
-REPO="SamBleed/opencode-obsidian"
+REPO="Haiagari/opencode-obsidian"
 
 echo "🚀 Configurando la identidad del repositorio en GitHub..."
 gh repo edit "$REPO" \
