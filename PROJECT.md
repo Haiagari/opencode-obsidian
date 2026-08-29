@@ -156,4 +156,4 @@ Avoid hard-coded absolute paths. Use `BUNKER_HOME` or project-local configuratio
 
 ---
 
-MIT License © 2026 | **SamBleed**
+MIT License © 2026 | **Haiagari**

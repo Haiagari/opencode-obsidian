@@ -131,7 +131,7 @@
 ### Option 1 — Clone as vault (recommended)
 
 ```bash
-git clone https://github.com/SamBleed/opencode-obsidian.git
+git clone https://github.com/Haiagari/opencode-obsidian.git
 cd opencode-obsidian
 ```
 
@@ -608,7 +608,7 @@ MIT License. See [LICENSE](LICENSE) for full text.
 <p align="center">
   Based on the <a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f">LLM Wiki pattern</a> by Andrej Karpathy.
   <br>
-  Built by <a href="https://github.com/SamBleed">SamBleed</a> for <a href="https://opencode.ai">OpenCode</a>.
+  Built by <a href="https://github.com/Haiagari">Haiagari</a> for <a href="https://opencode.ai">OpenCode</a>.
   <br>
   <i>Compounding knowledge is the highest-leverage habit a thinking person can build.</i>
 </p>

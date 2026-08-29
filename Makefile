@@ -50,6 +50,7 @@ test-retrieve:
 	@echo "========================================"
 	@echo "  Suite: BM25 Retrieval"
 	@echo "========================================"
+	@python3 scripts/retrieve.py status > /dev/null 2>&1 || python3 scripts/bm25-index.py build
 	@python3 scripts/retrieve.py status > /dev/null 2>&1 && echo "  ✅ Índice BM25 existe" || (echo "  ❌ Índice BM25 no encontrado" && exit 1)
 	@python3 scripts/retrieve.py "test query búsqueda" --top 2 > /dev/null 2>&1 && echo "  ✅ Búsqueda BM25 funciona" || (echo "  ❌ Búsqueda BM25 falló" && exit 1)
 	@echo ""

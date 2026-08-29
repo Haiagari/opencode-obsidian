@@ -12,7 +12,7 @@ fi
 BUNKER_HOME="${BUNKER_HOME:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 INBOX_DIR="${BUNKER_INBOX_DIR:-$BUNKER_HOME/wiki/inbox}"
 ARCHIVE_DIR="${BUNKER_ARCHIVE_DIR:-$BUNKER_HOME/wiki/archive}"
-REPO="${BUNKER_GITHUB_REPO:-SamBleed/opencode-obsidian}"
+REPO="${BUNKER_GITHUB_REPO:-Haiagari/opencode-obsidian}"
 
 cd "$BUNKER_HOME"
 mkdir -p "$ARCHIVE_DIR"

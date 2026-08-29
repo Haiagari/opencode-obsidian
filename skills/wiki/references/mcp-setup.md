@@ -1,134 +1,114 @@
-# MCP Setup
+# MCP Setup for OpenCode
 
-MCP lets OpenCode read and write vault notes directly without copy-paste. Four options ordered from simplest to most featureful.
+MCP (Model Context Protocol) allows OpenCode to connect directly to tools, external services, and automation pipelines without copy-pasting.
 
-> [!tip] Recommendation
-> If you have **Obsidian v1.12 or newer**, start with **Option D: Obsidian CLI**. It needs no MCP server, no plugins, and no TLS workarounds. Use Options A or B only if you need persistent MCP integration or are on an older Obsidian version.
-
----
-
-## Step 1: Install the Local REST API Plugin
-
-You must do this in Obsidian (OpenCode cannot do it programmatically):
-
-1. Obsidian > Settings > Community Plugins > Turn off Restricted Mode
-2. Browse > Search "Local REST API" > Install > Enable
-3. Settings > Local REST API > Copy the API key
-
-The plugin runs on `https://127.0.0.1:27124` with a self-signed certificate.
-
-Test it:
-```bash
-curl -sk -H "Authorization: Bearer <YOUR_KEY>" https://127.0.0.1:27124/
-```
-
-You should get a JSON response with vault info.
+> [!important] OpenCode MCP Configuration
+> OpenCode reads MCP servers from the root `mcp` block in `~/.config/opencode/opencode.json` (or `.opencode/opencode.json`).
+> OpenCode supports:
+> - `type: "remote"` with `url`, optional `enabled`, and optional `oauth` (see `OPENCODE_MCP_GUIDE.md`).
+> - `type: "local"` with `command` and `args` array.
+>
+> *(Do not use legacy Claude Code CLI `claude mcp add...` commands or `type: "http"`).*
 
 ---
 
-## Option A: mcp-obsidian (REST API based)
+## 1. Remote MCP: n8n Automation Engine
 
-Uses MarkusPfundstein's mcp-obsidian. Requires the Local REST API plugin running.
+To connect OpenCode to the local n8n instance (`n8n_meco_lab`), configure a remote MCP endpoint:
 
-```bash
-claude mcp add-json obsidian-vault '{
-  "type": "stdio",
-  "command": "uvx",
-  "args": ["mcp-obsidian"],
-  "env": {
-    "OBSIDIAN_API_KEY": "<YOUR_KEY>",
-    "OBSIDIAN_HOST": "127.0.0.1",
-    "OBSIDIAN_PORT": "27124",
-    "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+In `~/.config/opencode/opencode.json`:
+
+```json
+{
+  "mcp": {
+    "n8n-mcp": {
+      "type": "remote",
+      "url": "http://localhost:5678/mcp-server/http",
+      "enabled": true,
+      "oauth": false
+    }
   }
-}' --scope user
+}
 ```
 
-> [!warning] Security
-> `NODE_TLS_REJECT_UNAUTHORIZED: "0"` **disables TLS certificate verification process-wide** for the MCP server. It is required here because the Local REST API plugin uses a self-signed certificate. This is acceptable for `127.0.0.1` (localhost) connections only. Never use this setting for any non-loopback connection. If you are uncomfortable with the global TLS bypass, prefer **Option D (Obsidian CLI)** or **Option B (filesystem-based)** which avoid this entirely.
+Authenticate if required:
+```bash
+opencode mcp auth n8n-mcp
+```
 
-Capabilities: read notes, write notes, search, patch frontmatter fields, append under headings.
+Verify connection:
+```bash
+opencode mcp list
+opencode mcp auth list
+opencode mcp debug n8n-mcp
+```
 
 ---
 
-## Option B: MCPVault (filesystem based)
+## 2. Vault Access Options
 
-No Obsidian plugin needed. Reads the vault directory directly.
+### Option A: Obsidian CLI (Native & Recommended for Obsidian v1.12+)
+
+No MCP server or plugin required. OpenCode interacts with your vault via CLI:
 
 ```bash
-claude mcp add-json obsidian-vault '{
-  "type": "stdio",
-  "command": "npx",
-  "args": ["-y", "@bitbonsai/mcpvault@latest", "/absolute/path/to/your/vault"]
-}' --scope user
-```
-
-Replace `/absolute/path/to/your/vault` with the actual vault path.
-
-Tools available: `search_notes` (BM25), `read_note`, `create_note`, `update_note`, `get_frontmatter`, `update_frontmatter`, `list_all_tags`, `read_multiple_notes`.
-
----
-
-## Option C: Direct REST API via curl
-
-No MCP needed. Use curl in bash throughout the session. See `rest-api.md` for all commands.
-
----
-
-## Option D: Obsidian CLI (recommended for v1.12+)
-
-Obsidian shipped a native CLI in v1.12 (2026). It exposes vault operations directly to the terminal. No REST API plugin, no MCP server, no self-signed certs, no TLS workarounds. OpenCode calls it through the Bash tool.
-
-**Check if available:**
-```bash
-which obsidian-cli 2>/dev/null && obsidian-cli --version
-# or, on flatpak:
-flatpak run md.obsidian.Obsidian --cli --version
-```
-
-**Common operations:**
-```bash
-# List all notes in a folder
-obsidian-cli list /path/to/vault wiki/
-
-# Read a note
 obsidian-cli read /path/to/vault wiki/index.md
-
-# Create or update a note
 obsidian-cli write /path/to/vault wiki/new-note.md < content.md
-
-# Search notes by content
 obsidian-cli search /path/to/vault "query term"
 ```
 
-**Why prefer this**:
-- No plugin install required (CLI is built into Obsidian)
-- No MCP server process to manage
-- No TLS certificate bypass needed
-- Survives Obsidian restarts (no persistent connection)
-- Works identically across desktop and headless environments
+### Option B: Local Filesystem MCP (`@bitbonsai/mcpvault`)
 
-**When to use Options A/B/C instead**: If you need persistent semantic search, frontmatter patching, or are on Obsidian < v1.12.
+Runs locally via OpenCode `local` MCP configuration:
 
-The `kepano/obsidian-skills` repo includes an `obsidian-cli` skill that wraps these commands as reusable patterns. Install it alongside this plugin for first-class CLI support.
+In `~/.config/opencode/opencode.json`:
 
----
-
-## Use `--scope user`
-
-Both MCP options use `--scope user` so the vault is available across all OpenCode Code projects, not just the one where you ran the command.
-
----
-
-## Verification
-
-After setup:
-
-```bash
-claude mcp list               # confirm the server appears
-claude mcp get obsidian-vault # confirm the path or URL is correct
+```json
+{
+  "mcp": {
+    "obsidian-vault": {
+      "type": "local",
+      "command": ["npx", "-y", "@bitbonsai/mcpvault@latest", "/absolute/path/to/your/vault"],
+      "enabled": true
+    }
+  }
+}
 ```
 
-In a OpenCode Code session, type `/mcp` to check connection status.
+Tools provided: `read_note`, `search_notes`, `create_note`, `update_note`, `get_frontmatter`, `update_frontmatter`, `list_all_tags`.
 
-Then test: "List all notes in my wiki folder."
+### Option C: Local REST API Plugin + MCP (`mcp-obsidian`)
+
+1. Install "Local REST API" community plugin in Obsidian.
+2. Configure local MCP in `~/.config/opencode/opencode.json`:
+
+```json
+{
+  "mcp": {
+    "obsidian-vault": {
+      "type": "local",
+      "command": ["uvx", "mcp-obsidian"],
+      "environment": {
+        "OBSIDIAN_API_KEY": "<YOUR_KEY>",
+        "OBSIDIAN_HOST": "127.0.0.1",
+        "OBSIDIAN_PORT": "27124",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      },
+      "enabled": true
+    }
+  }
+}
+```
+
+---
+
+## 3. Verification
+
+Check OpenCode MCP status:
+
+```bash
+opencode mcp list
+```
+
+In OpenCode chat, run `/mcp` to inspect available tools.
+

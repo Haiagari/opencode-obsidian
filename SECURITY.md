@@ -5,8 +5,8 @@
 If you find a security vulnerability, **do not open a public issue**.
 
 Contact directly:
-- GitHub: [SamBleed](https://github.com/SamBleed)
-- Repo: [opencode-obsidian](https://github.com/SamBleed/opencode-obsidian)
+- GitHub: [Haiagari](https://github.com/Haiagari)
+- Repo: [opencode-obsidian](https://github.com/Haiagari/opencode-obsidian)
 
 Vulnerabilities will be addressed within 48 business hours.
 

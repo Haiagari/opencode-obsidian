@@ -2,6 +2,7 @@
 type: meta
 title: "Bunker OS — Wiki Index"
 created: 2026-07-05
+updated: 2026-07-05
 tags: [meta, index]
 status: evergreen
 ---

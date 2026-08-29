@@ -17,7 +17,7 @@ scripts/        → BM25 retrieval, indexing
 hooks/          → OpenCode hooks
 ```
 
-`wiki/` is gitignored — your personal content stays local and never gets pushed.
+The `wiki/` baseline (core index, hot cache, evergreen concepts, entities, and skills) is tracked in git. Private and volatile folders such as `wiki/projects/`, `wiki/meta/handovers/`, `wiki/decisions/`, `wiki/blueprints/`, and `wiki/sources/` (as well as `wiki/.raw/`, `wiki/questions/`, `wiki/canvases/`, and `wiki/meta/archive/`) are gitignored so sensitive and personal content stays local.
 
 ## Proactive Protocol
 

@@ -33,8 +33,10 @@ node_modules/
 .env.local
 *.local.md
 
+# Binaries
+bin/ingest_server
+
 # Personal files dropped into vault root by Obsidian (don't commit these)
-WIKI*.md
 PROMPT.md
 Welcome.md
 *.tmp.*
