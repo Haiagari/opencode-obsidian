@@ -16,9 +16,12 @@
 .obsidian-git-data
 .trash/
 
-# System
+# System & Local IDE state
 .DS_Store
 Thumbs.db
+.directory
+.codex
+.pi/
 
 # Python
 __pycache__/

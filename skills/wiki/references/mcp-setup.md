@@ -4,17 +4,18 @@ MCP (Model Context Protocol) allows OpenCode to connect directly to tools, exter
 
 > [!important] OpenCode MCP Configuration
 > OpenCode reads MCP servers from the root `mcp` block in `~/.config/opencode/opencode.json` (or `.opencode/opencode.json`).
-> OpenCode supports:
-> - `type: "remote"` with `url`, optional `enabled`, and optional `oauth` (see `OPENCODE_MCP_GUIDE.md`).
+>
+> Valid server shapes accepted by OpenCode:
+> - `type: "remote"` with `url`, optional `enabled: true | false`, optional `headers`, and optional `oauth: true | false`.
 > - `type: "local"` with `command` and `args` array.
 >
-> *(Do not use legacy Claude Code CLI `claude mcp add...` commands or `type: "http"`).*
+> *(Do not use legacy Claude Code CLI `claude mcp add...` commands or invalid `type: "http"` schema which causes startup rejection).*
 
 ---
 
 ## 1. Remote MCP: n8n Automation Engine
 
-To connect OpenCode to the local n8n instance (`n8n_meco_lab`), configure a remote MCP endpoint:
+To connect OpenCode to a remote or local n8n instance (`n8n_meco_lab`), configure a remote MCP endpoint:
 
 In `~/.config/opencode/opencode.json`:
 
@@ -31,16 +32,29 @@ In `~/.config/opencode/opencode.json`:
 }
 ```
 
-Authenticate if required:
+### Authentication & Debugging
+
+If OpenCode manages OAuth, authenticate using:
 ```bash
 opencode mcp auth n8n-mcp
 ```
+Complete the OAuth login in the browser if prompted.
 
-Verify connection:
+Verify connection and debug status:
 ```bash
 opencode mcp list
 opencode mcp auth list
 opencode mcp debug n8n-mcp
+```
+
+> [!note] Expected 401 on First Probe
+> A `401 Unauthorized` during `opencode mcp debug <server>` is expected during initial handshake as OpenCode probes the endpoint to detect the OAuth flow before redirecting or authenticating.
+
+### Troubleshooting OpenCode Startup Issues
+
+If OpenCode fails before reaching MCP (e.g. SQLite database lock or WAL issue):
+```bash
+sqlite3 ~/.local/share/opencode/opencode.db 'PRAGMA wal_checkpoint(TRUNCATE);'
 ```
 
 ---
@@ -111,4 +125,3 @@ opencode mcp list
 ```
 
 In OpenCode chat, run `/mcp` to inspect available tools.
-
