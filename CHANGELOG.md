@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.4.0 — Multi-Writer Concurrency, SQLite FTS5 Engine & Defensive Security — 2026-08-29
+
+### Added
+- **SQLite FTS5 Search Engine** (`scripts/fts_engine.py`): Incremental full-text search with SHA-256 caching and native `-bm25` ranking in WAL mode with zero external dependencies.
+- **POSIX Multi-Writer File Locking** (`scripts/vault_lock.py`, `bin/vault-lock.sh`): Advisory file locks (`fcntl.flock`) and atomic file replacement (`os.replace`) to guarantee safety under concurrent multi-agent access.
+- **Anti-Prompt-Injection & Ingest Sanitizer** (`scripts/sanitize_ingest.py`): Defensive ingestion pipeline stripping zero-width unicode tokens, defanging prompt injection overrides, and neutralizing malicious HTML tags/scripts.
+- **HMAC-SHA256 Signed Webhooks** (`bin/bunker-alert.sh`): Cryptographic payload signatures with `X-Bunker-Signature` header for secure, tamper-proof n8n alert triggering.
+- **Unit Testing Suite** (`make test-unit`): Added 11+ dedicated unit tests covering FTS5 indexing/search, concurrency file locking, and prompt injection sanitization.
+
+### Hardened
+- **n8n Concurrency & Pruning**: Upgraded `N8N_CONCURRENCY_PRODUCTION_LIMIT=20`, configured `EXECUTIONS_DATA_PRUNE=true`, `EXECUTIONS_DATA_MAX_AGE=168`, and `EXECUTIONS_DATA_PRUNE_MAX_COUNT=50000` in `automation/n8n-lab/docker-compose.yml`.
+
+### Fixed
+- **Canonical Author & Identity**: Unified author and repository identity to `Haiagari` across documentation, metadata, and git configuration.
+
+### Changed
+- Updated `README.md`, `PROJECT.md`, `AGENTS.md`, and `BUNKER_RULES.md` to reflect v1.4.0 architectural and security capabilities.
+
 ## v1.3.1 — Feature Port from claude-obsidian v1.9 — 2026-07-02
 
 ### Added

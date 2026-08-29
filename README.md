@@ -6,8 +6,8 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"></a>
-  <a href="PROJECT.md"><img src="https://img.shields.io/badge/Version-v1.3.1-blue?style=flat-square" alt="Version"></a>
-  <a href="Makefile"><img src="https://img.shields.io/badge/Tests-430_passing-brightgreen?style=flat-square" alt="Tests"></a>
+  <a href="PROJECT.md"><img src="https://img.shields.io/badge/Version-v1.4.0-blue?style=flat-square" alt="Version"></a>
+  <a href="Makefile"><img src="https://img.shields.io/badge/Tests-passing-brightgreen?style=flat-square" alt="Tests"></a>
   <a href=".github/workflows/test.yml"><img src="https://img.shields.io/badge/CI-GitHub_Actions-2088FF?style=flat-square&logo=githubactions" alt="CI"></a>
   <a href="automation/n8n-lab"><img src="https://img.shields.io/badge/n8n-Automation-8B5CF6?style=flat-square" alt="n8n"></a>
   <a href="https://opencode.ai"><img src="https://img.shields.io/badge/OpenCode-Ready-8B5CF6?style=flat-square" alt="OpenCode"></a>
@@ -17,7 +17,7 @@
 <p align="center">
   <b>Bunker OS</b> is a local-first knowledge operating system built on Obsidian.<br>
   It turns AI sessions, research, audits, evidence, and decisions into persistent operational assets —<br>
-  automation via n8n, text retrieval via BM25, and a full orchestration pipeline for OpenCode.
+  automation via n8n, text retrieval via SQLite FTS5 + BM25, and a full orchestration pipeline for OpenCode.
 </p>
 
 <p align="center">
@@ -57,15 +57,16 @@
 | Self-organizing wiki | Creates entities, concepts | ✅ | ❌ |
 | n8n automation | Async + webhooks + DLQ | ❌ | ❌ |
 | Autoresearch | 3-round web with gaps | ✅ | ❌ |
-| Text retrieval | BM25 (stdlib, zero deps) | BM25 + API | ❌ |
+| Text retrieval | SQLite FTS5 + BM25 (incremental, zero deps) | BM25 + API | ❌ |
 | Thinking framework | 10 principles | ✅ | ❌ |
-| Tests + CI | 430 tests, GitHub Actions | ✅ | ❌ |
+| Tests + CI | 6 suites, GitHub Actions | ✅ | ❌ |
 | Dead Letter Queue | Global error handler | ❌ | ❌ |
 | Evidence vault | SHA256 checksums | ❌ | ❌ |
-| Multi-channel alerts | Slack / Telegram / Discord | ❌ | ❌ |
+| Multi-channel alerts | Slack / Telegram / Discord (HMAC-signed) | ❌ | ❌ |
 | Health monitoring | Active n8n workflow | ❌ | ❌ |
+| Security & Guardrails | Anti-Prompt-Injection + HMAC Webhooks | ❌ | ❌ |
 | Multi-methodology | ❌ (generic only) | LYT / PARA / Zettelkasten | ❌ |
-| Multi-writer safe | ❌ (single-writer) | Per-file locks | ❌ |
+| Multi-writer safe | ✅ (POSIX `fcntl.flock` + atomic rename) | Per-file locks | ❌ |
 | Open source | MIT | MIT | Freemium |
 
 > **Note on Smart Connections:** This column includes [Smart Connections](https://github.com/brianpetro/obsidian-smart-connections), an Obsidian community plugin that enables semantic search and RAG over vault notes. It is included for comparison as a complementary tool that works alongside Bunker OS. Bunker OS uses BM25 (keyword-based); Smart Connections uses vector embeddings (semantic). Both can run in the same vault.
@@ -80,7 +81,7 @@
 
 - **Persistent wiki** — 200+ pages of concepts, entities, sources, blueprints, and projects
 - **Autoresearch** — 3-round autonomous web research: decomposes topics, searches, cross-references sources, and files everything into the wiki
-- **BM25 text retrieval** — fast keyword search over wiki pages, pure Python, zero external dependencies, no LLM needed for indexing
+- **SQLite FTS5 + BM25 search** — fast keyword and full-text search with incremental SHA-256 caching (`.vault-meta/fts5_index.db`), pure Python stdlib, zero external dependencies
 - **`/think`** — 10-principle decision framework for architectural decisions and audits
 - **Wiki-ingest** — source ingestion with automatic entity and concept extraction
 - **Wiki-lint** — health check across 8 categories (orphans, dead links, missing frontmatter)
@@ -90,12 +91,15 @@
 - **AOC v4 Enterprise** — pipeline: webhook → AI triage (OpenRouter) → GitHub issues → multi-channel notifications
 - **Dead Letter Queue** — global error trigger that catches errors from *all* workflows
 - **Health Check** — active workflow monitoring system status every 5 min
-- **Ultimate Alerter** — multi-channel alerts (Slack / Telegram / Discord)
+- **Ultimate Alerter** — multi-channel alerts (Slack / Telegram / Discord) with HMAC-SHA256 signature verification
 - **Emergency Reprocessor** — auto-retry of failed events every 5 min
 
-### 🛡️ Operations
+### 🛡️ Operations & Security
 
-- **430 tests** — 5 suites, Makefile, GitHub Actions CI on every push/PR
+- **Multi-writer concurrency** — POSIX advisory locking (`fcntl.flock`) and atomic file replacement (`scripts/vault_lock.py`, `bin/vault-lock.sh`)
+- **Defensive ingestion** — pre-ingest prompt injection sanitizer (`scripts/sanitize_ingest.py`) stripping invisible tokens, malicious HTML, and override directives
+- **Webhook security** — HMAC-SHA256 signature generation (`bin/bunker-alert.sh`) for tamper-proof alerting
+- **Test automation** — 6 suites (`make test` including `test-unit`), GitHub Actions CI on every push/PR
 - **Evidence vault** — `report.zip` and `security-audit-report.json` indexed with SHA256
 - **Integrity engine** — automated vault health scripts with Markdown + JSON reports
 - **Command Center** — dashboard + agent queue + handovers + governance
@@ -108,19 +112,20 @@
 
 | Dimension | Bunker OS | claude-obsidian |
 |---|---|---|
-| Version | v1.3.1 | v1.9.2 |
+| Version | v1.4.0 | v1.9.2 |
 | Purpose | Operations + automation + security | PKM / second brain |
 | Harness | OpenCode | Claude Code (plugin) |
 | Language | English | English |
 | Skills | 13 operational | 15 research |
 | Async automation | n8n on Docker | None |
-| Text retrieval | BM25 (delegates to agent) | BM25 + API + rerank |
-| Tests | 430 (5 suites) | ~1,240 (9 suites) |
+| Text retrieval | SQLite FTS5 + BM25 (incremental, stdlib) | BM25 + API + rerank |
+| Tests | 6 suites (unit + integration + CI) | ~1,240 (9 suites) |
 | Evidence checksums | ✅ | ❌ |
 | Dead Letter Queue | ✅ | ❌ |
-| Multi-channel alerts | Slack / Telegram / Discord | ❌ |
+| Multi-channel alerts | Slack / Telegram / Discord (HMAC-SHA256) | ❌ |
+| Security sanitization | Pre-ingest anti-injection | ❌ |
 | Multi-methodology | ❌ | LYT / PARA / Zettelkasten |
-| Multi-writer safe | ❌ | ✅ |
+| Multi-writer safe | ✅ (`fcntl.flock` + atomic rename) | ✅ |
 | Plugin marketplace | ❌ | Claude Code plugin |
 | Stars | — | 8.5k |
 
@@ -176,17 +181,21 @@ When you need context:
 | `index evidence` | Index audit artifacts (report.zip, JSON) with SHA256 checksums |
 | `obsidian bases` | Create/edit Obsidian Bases (.base) database views |
 
-### CLI Scripts
+#### CLI Scripts
 
 ```bash
-make test                              # 430 tests, 5 suites
+make test                              # 6 suites (unit + integration)
 ./bin/bunker-check.sh                  # Local definition of done
 ./bin/wiki-integrity.sh                # Scan for orphans and broken links
 ./bin/evidence-index.sh                # Index evidence with SHA256
+./bin/vault-lock.sh append wiki/log.md # Concurrency-safe atomic append
+./bin/bunker-alert.sh target info "msg"# Send HMAC-SHA256 signed alert to n8n
 ./bin/bunker.sh init                   # Vault health check
 ./bin/wiki-sync.sh --apply             # Sync + commit wiki
-python3 scripts/retrieve.py build      # Rebuild BM25 index
-python3 scripts/retrieve.py "query"    # BM25 text retrieval
+python3 scripts/fts_engine.py index    # SQLite FTS5 incremental indexation
+python3 scripts/fts_engine.py "query"  # SQLite FTS5 + BM25 ranked search
+python3 scripts/sanitize_ingest.py doc # Pre-ingest prompt injection check
+python3 scripts/retrieve.py "query"    # Legacy BM25 text retrieval
 ```
 
 ### `autoresearch` — autonomous research loop
@@ -230,7 +239,7 @@ Use for non-trivial architectural decisions, audits, and post-mortems.
 | Skill | Description |
 |---|---|
 | `autoresearch` | 3-round web research with Exa + webfetch |
-| `wiki-retrieve` | BM25 text retrieval (stdlib Python, no deps) |
+| `wiki-retrieve` | BM25 & SQLite FTS5 text retrieval (stdlib Python, zero deps) |
 | `think` | 10-principle decision framework |
 | `wiki-ingest` | Ingest sources into the wiki |
 | `wiki-query` | Query the wiki with synthesis |
@@ -269,7 +278,7 @@ n8n is the Bunker's async "nervous system." It runs on Docker and exposes an MCP
 | Workflow | Nodes | Status | Description |
 |---|:---:|---|---|
 | Health Check | 2 | 🟢 Active | System health check every 5 min |
-| Ultimate Alerter | 2 | 🟢 Active | Multi-channel alert via webhook |
+| Ultimate Alerter | 2 | 🟢 Active | Multi-channel alert via webhook (HMAC-SHA256) |
 | Dead Letter Queue | 5 | ⚪ Inactive | Error trigger: captures all workflow errors |
 | AOC v4 Enterprise | 37 | ⚪ Inactive | Pipeline: webhook → AI triage → GitHub → ... |
 
@@ -307,8 +316,10 @@ Catches errors from **any** workflow in the instance. Persists the last 200 erro
 Configure environment variables in `automation/n8n-lab/.env`:
 
 ```yaml
-N8N_CONCURRENCY_PRODUCTION_LIMIT=10   # Prevent OOM on spikes
+N8N_CONCURRENCY_PRODUCTION_LIMIT=20   # High concurrency limit tuned for production
 EXECUTIONS_DATA_PRUNE=true            # Auto cleanup
+EXECUTIONS_DATA_MAX_AGE=168           # Keep execution data for 7 days
+EXECUTIONS_DATA_PRUNE_MAX_COUNT=50000 # Max pruned execution entries
 N8N_METRICS=true                      # Observability
 N8N_LOG_FORMAT=json                   # Structured logs
 ```
@@ -322,14 +333,16 @@ Environment: PostgreSQL recommended, queue mode with Redis for horizontal scalin
 ### Vault flow
 
 ```
-.raw/ (immutable sources)
+.raw/ (untrusted source documents)
   ↓
-wiki-ingest (OpenCode skill)
+sanitize_ingest.py (prompt injection / hidden tag neutralization)
+  ↓
+wiki-ingest (OpenCode skill with atomic vault locking)
   ↓ (extracts entities, concepts, sources)
 wiki/ (persistent knowledge)
   ├── hot.md (recent context ~500 words)
   ├── index.md (master catalog)
-  ├── log.md (append-only operation log)
+  ├── log.md (append-only operation log via vault_lock.py)
   ├── sources/ (external source summaries)
   ├── entities/ (people, orgs, products)
   ├── concepts/ (ideas, patterns, frameworks)
@@ -339,25 +352,25 @@ wiki/ (persistent knowledge)
 
 `wiki-ingest` extracts entities, concepts, and sources, then creates/updates pages and cross-references.
 
-### Async automation
+### Async automation & Security
 
 ```
-OpenCode (skills)
-  ↓ (n8n-mcp bridge)
-n8n Docker (localhost:5678)
-  ├→ Webhooks → AOC pipeline → GitHub Issues
-  ├→ Schedule → Health Check (5 min)
-  ├→ Schedule → Emergency Reprocessor (5 min)
-  └→ Error Trigger → Dead Letter Queue
-       ↓
-    Notifications (Slack / Telegram / Discord)
+OpenCode (skills) / Local CLI
+  ├→ bin/bunker-alert.sh (HMAC-SHA256 signature)
+  └→ n8n Docker (localhost:5678)
+       ├→ Webhooks → AOC pipeline → GitHub Issues
+       ├→ Schedule → Health Check (5 min)
+       ├→ Schedule → Emergency Reprocessor (5 min)
+       └→ Error Trigger → Dead Letter Queue
+            ↓
+         Notifications (Slack / Telegram / Discord)
 ```
 
 ---
 
-## BM25 Text Retrieval
+## BM25 & SQLite FTS5 Text Retrieval
 
-The Bunker includes a fast, zero-dependency text retrieval system using BM25 — the same ranking algorithm behind Elasticsearch. No embeddings, no LLM calls, no external services.
+The Bunker includes a fast, zero-dependency text retrieval engine using SQLite FTS5 with native BM25 ranking (`-bm25(wiki_fts)`). No embeddings, no LLM calls, and zero external dependencies (pure Python standard library: `sqlite3`, `hashlib`).
 
 OpenCode (the agent) receives the ranked chunks and applies its own model to understand and synthesize the answer. **The agent is the only intelligence in the loop.**
 
@@ -365,30 +378,31 @@ OpenCode (the agent) receives the ranked chunks and applies its own model to und
 ```
 Query
   ↓
-BM25 (wiki page chunks)
+SQLite FTS5 (`.vault-meta/fts5/vault_fts.db`) with BM25 Ranking
   ↓
-Top 5 results (ranked by relevance)
+Top K results (ranked by relevance)
   ↓
 OpenCode reads & synthesizes
 ```
 
-### Performance
+### Key Architectural Characteristics
 
-- **8 pages** indexed (seed vault — grows with usage)
-- **~500 token chunks** at paragraph boundaries
-- **Pure Python stdlib** — no numpy, no ollama, no API keys
+- **Zero External Dependencies**: Built entirely on Python stdlib `sqlite3` with `PRAGMA journal_mode = WAL`.
+- **Incremental Indexing**: Uses file modification times (`mtime`) and SHA-256 content hashes to only re-index modified or added notes.
+- **Multilingual Tokenizer**: Uses `unicode61 remove_diacritics 2` for full-text search across English and Spanish.
+- **High Performance**: Sub-millisecond keyword and BM25 ranking across thousands of chunks.
 
 ### Maintenance
 
 ```bash
-# Build/update index
-python3 scripts/retrieve.py build
+# Build/update SQLite FTS5 incremental index
+python3 scripts/fts_engine.py index
 
-# Check status
-python3 scripts/retrieve.py status
+# Check status of index & tracked files
+python3 scripts/fts_engine.py status
 
-# Search
-python3 scripts/retrieve.py "n8n docker automation" --top 5
+# Query via SQLite FTS5 engine
+python3 scripts/fts_engine.py "n8n docker automation" --top 5
 ```
 
 ---
@@ -399,18 +413,19 @@ python3 scripts/retrieve.py "n8n docker automation" --top 5
 
 | Suite | Tests | What it validates |
 |---|:---:|---|
-| `test-workflows` | 344 | All n8n JSONs parseable, valid connections, no orphans |
-| `test-wiki` | 21 | Essential files exist, valid frontmatter, docker running |
-| `test-scripts` | 61 | Bash syntax, shebang, executables, no secrets, `go vet` |
+| `test-workflows` | 186+ | All n8n JSONs parseable, valid connections, no orphans |
+| `test-wiki` | 20+ | Essential files exist, valid frontmatter, docker running |
+| `test-scripts` | 65+ | Bash syntax, shebang, executables, no secrets, `go vet` |
 | `test-yaml` | 2 | CI and docker-compose YAML valid |
-| `test-retrieve` | 2 | BM25 index exists, search returns results |
+| `test-retrieve` | 2 | BM25 / FTS5 index exists, search returns results |
+| `test-unit` | 11+ | Python unit tests (SQLite FTS5, POSIX File Locking, Prompt Sanitizer) |
 
 ### CI
 
-Runs on every push/PR to `main` — 5 suites across Python + Go + bash.
+Runs on every push/PR to `main` — 6 suites across Python + Go + bash.
 
 ```bash
-make test    # 430 tests, 5 suites
+make test    # Runs all 6 suites
 ```
 
 ### Secrets scanned
@@ -433,7 +448,7 @@ See [SECURITY.md](SECURITY.md) for the full security policy.
 opencode-obsidian/
 ├── skills/                       13 repo skills + 6 ECC global
 │   ├── autoresearch/             3-round autonomous research
-│   ├── wiki-retrieve/            BM25 text retrieval
+│   ├── wiki-retrieve/            BM25 & FTS5 text retrieval
 │   ├── think/                    10-principle framework
 │   ├── wiki-ingest/              Source ingestion
 │   ├── wiki-query/               Wiki querying
@@ -450,15 +465,23 @@ opencode-obsidian/
 ├── hooks/
 │   └── hooks.json                7 hooks across 4 events
 ├── scripts/                      Python + bash helpers
+│   ├── fts_engine.py             SQLite FTS5 + BM25 incremental search engine
+│   ├── vault_lock.py             POSIX advisory locking (`fcntl.flock`) & atomic ops
+│   ├── sanitize_ingest.py        Pre-ingest prompt injection & payload sanitizer
 │   ├── bm25-index.py             BM25 indexer
 │   └── retrieve.py               Search orchestrator
-├── tests/                        5 suites, 430 tests
+├── tests/                        6 suites (unit + integration)
 │   ├── test_workflow_connections.py
 │   ├── test_wiki_integrity.sh
-│   └── test_scripts.sh
-├── Makefile                      5 test targets (root)
-├── bin/                          15 shell scripts + Go source + binary
+│   ├── test_scripts.sh
+│   ├── test_fts_engine.py
+│   ├── test_vault_lock.py
+│   └── test_sanitize_ingest.py
+├── Makefile                      Test targets & root runner
+├── bin/                          16 shell scripts + Go source + binary
 │   ├── bunker-check.sh           Full health check
+│   ├── vault-lock.sh             CLI wrapper for atomic lock & write
+│   ├── bunker-alert.sh           HMAC-SHA256 signed n8n alert trigger
 │   ├── wiki-integrity.sh         Integrity scan
 │   └── evidence-index.sh         Evidence indexing
 ├── automation/
