@@ -100,10 +100,10 @@ Automation is an extension, not a prerequisite for the personal knowledge workfl
 
 ### 🛡️ Operations & Security
 
-Host and repository utilities are optional implementations in `extensions/operations/`; legacy `bin/` entry points remain compatibility shims. See [extension guidance](extensions/operations/README.md).
+Host and repository utilities are optional implementations in `extensions/operations/`; legacy `bin/` entry points remain compatibility shims. See [extension guidance](extensions/operations/README.md) and the [security boundaries](docs/security-boundaries.md).
 
 - **Multi-writer concurrency** — POSIX advisory locking (`fcntl.flock`) and atomic file replacement (`scripts/vault_lock.py`, `bin/vault-lock.sh`)
-- **Defensive ingestion** — pre-ingest prompt injection sanitizer (`scripts/sanitize_ingest.py`) stripping invisible tokens, malicious HTML, and override directives
+- **Source handling** — best-effort heuristic sanitizer (`scripts/sanitize_ingest.py`) for selected invisible characters, known override text, and HTML patterns; sanitized content remains untrusted
 - **Webhook alert signing** — `bin/bunker-alert.sh` generates an HMAC-SHA256 signature; the reviewed alerter does not validate it
 - **Test tooling** — `make test-core` checks knowledge workflows without Docker; `make test-extensions` validates optional n8n assets, and `make test` runs both
 - **Evidence vault** — `report.zip` and `security-audit-report.json` indexed with SHA256

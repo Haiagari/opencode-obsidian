@@ -13,10 +13,13 @@ This policy covers:
 - Hooks in `hooks/hooks.json`
 - Tests in `tests/`
 
+See [Security Boundaries](docs/security-boundaries.md) for the local trust model and known limits.
+
 ## What the current checks cover
 
 - `make test-scripts` checks shell scripts in the configured `bin/` and `extensions/` paths against a limited set of secret patterns. It is not a whole-repository secret scanner and cannot guarantee that credentials are absent.
 - `make test` validates the Python tests, workflow JSON connections, and configured YAML files.
+- The ingestion sanitizer is a best-effort heuristic. It is not a complete prompt-injection detector or a trust boundary; sanitized text remains untrusted.
 - The n8n Compose service binds to host loopback by default. Review the Compose file and local environment before changing its exposure.
 
 ## n8n workflow status and limitations
