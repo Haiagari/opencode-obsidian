@@ -7,17 +7,17 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"></a>
   <a href="PROJECT.md"><img src="https://img.shields.io/badge/Version-v1.4.0-blue?style=flat-square" alt="Version"></a>
-  <a href="Makefile"><img src="https://img.shields.io/badge/Tests-passing-brightgreen?style=flat-square" alt="Tests"></a>
+  <a href="Makefile"><img src="https://img.shields.io/badge/Tests-6_suites_defined-blue?style=flat-square" alt="Tests: six suites defined"></a>
   <a href=".github/workflows/test.yml"><img src="https://img.shields.io/badge/CI-GitHub_Actions-2088FF?style=flat-square&logo=githubactions" alt="CI"></a>
-  <a href="automation/n8n-lab"><img src="https://img.shields.io/badge/n8n-Automation-8B5CF6?style=flat-square" alt="n8n"></a>
+  <a href="extensions/n8n"><img src="https://img.shields.io/badge/n8n-Automation-8B5CF6?style=flat-square" alt="n8n"></a>
   <a href="https://opencode.ai"><img src="https://img.shields.io/badge/OpenCode-Ready-8B5CF6?style=flat-square" alt="OpenCode"></a>
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-Vault-7C3AED?style=flat-square&logo=obsidian" alt="Obsidian"></a>
 </p>
 
 <p align="center">
-  <b>Bunker OS</b> is a local-first knowledge operating system built on Obsidian.<br>
-  It turns AI sessions, research, audits, evidence, and decisions into persistent operational assets —<br>
-  automation via n8n, text retrieval via SQLite FTS5 + BM25, and a full orchestration pipeline for OpenCode.
+  <b>Bunker OS</b> is a local-first personal knowledge workflow built around an Obsidian vault.<br>
+  Capture information, sanitize and organize it, retrieve it later, and preserve context and decisions over time.<br>
+  Agent tools and optional n8n automation support that core; they are not required to use it.
 </p>
 
 <p align="center">
@@ -52,6 +52,8 @@
 
 ## Why Bunker OS
 
+Bunker OS is for personal daily use: a practical way to turn sources, research, conversations, and decisions into durable local notes you can find and resume later. The Markdown vault is the source of truth. See the [product direction](docs/product-direction.md) for scope, principles, and priorities.
+
 | Capability | Bunker OS | claude-obsidian | Smart Connections |
 |---|:---:|:---:|:---:|
 | Self-organizing wiki | Creates entities, concepts | ✅ | ❌ |
@@ -59,19 +61,19 @@
 | Autoresearch | 3-round web with gaps | ✅ | ❌ |
 | Text retrieval | SQLite FTS5 + BM25 (incremental, zero deps) | BM25 + API | ❌ |
 | Thinking framework | 10 principles | ✅ | ❌ |
-| Tests + CI | 6 suites, GitHub Actions | ✅ | ❌ |
+| Test tooling | Separate core (Docker-independent) and optional extension checks | ✅ | ❌ |
 | Dead Letter Queue | Global error handler | ❌ | ❌ |
 | Evidence vault | SHA256 checksums | ❌ | ❌ |
-| Multi-channel alerts | Slack / Telegram / Discord (HMAC-signed) | ❌ | ❌ |
+| Multi-channel alerts | Optional n8n workflows; sender signs alerts | ❌ | ❌ |
 | Health monitoring | Active n8n workflow | ❌ | ❌ |
-| Security & Guardrails | Anti-Prompt-Injection + HMAC Webhooks | ❌ | ❌ |
+| Security & Guardrails | Ingestion sanitizer; alert signature is not validated by the reviewed alerter | ❌ | ❌ |
 | Multi-methodology | ❌ (generic only) | LYT / PARA / Zettelkasten | ❌ |
 | Multi-writer safe | ✅ (POSIX `fcntl.flock` + atomic rename) | Per-file locks | ❌ |
 | Open source | MIT | MIT | Freemium |
 
 > **Note on Smart Connections:** This column includes [Smart Connections](https://github.com/brianpetro/obsidian-smart-connections), an Obsidian community plugin that enables semantic search and RAG over vault notes. It is included for comparison as a complementary tool that works alongside Bunker OS. Bunker OS uses BM25 (keyword-based); Smart Connections uses vector embeddings (semantic). Both can run in the same vault.
 
-> Bunker OS does not compete with claude-obsidian — it complements it. Where claude-obsidian is a researcher, Bunker OS is an operator. Both can coexist pointing at the same vault.
+> Bunker OS and claude-obsidian share an origin and can coexist in one vault. Bunker OS focuses on a local-first personal knowledge workflow, with agent tools and optional automation in support.
 
 ---
 
@@ -86,20 +88,24 @@
 - **Wiki-ingest** — source ingestion with automatic entity and concept extraction
 - **Wiki-lint** — health check across 8 categories (orphans, dead links, missing frontmatter)
 
-### ⚙️ Automation (n8n)
+### ⚙️ Optional automation (n8n)
 
-- **AOC v4 Enterprise** — pipeline: webhook → AI triage (OpenRouter) → GitHub issues → multi-channel notifications
-- **Dead Letter Queue** — global error trigger that catches errors from *all* workflows
-- **Health Check** — active workflow monitoring system status every 5 min
-- **Ultimate Alerter** — multi-channel alerts (Slack / Telegram / Discord) with HMAC-SHA256 signature verification
+Automation is an extension, not a prerequisite for the personal knowledge workflow. Workflow status varies; some are inactive or experimental.
+
+- **AOC v4** — documented pipeline concept using webhook, AI triage, GitHub, and notifications; not presented as a core knowledge capability
+- **Dead Letter Queue** — workflow for collecting errors when enabled
+- **Health Check** — n8n workflow for periodic status checks
+- **Ultimate Alerter** — multi-channel alerts; the sender generates HMAC-SHA256 signatures, but the reviewed alerter does not validate them
 - **Emergency Reprocessor** — auto-retry of failed events every 5 min
 
 ### 🛡️ Operations & Security
 
+Host and repository utilities are optional implementations in `extensions/operations/`; legacy `bin/` entry points remain compatibility shims. See [extension guidance](extensions/operations/README.md).
+
 - **Multi-writer concurrency** — POSIX advisory locking (`fcntl.flock`) and atomic file replacement (`scripts/vault_lock.py`, `bin/vault-lock.sh`)
 - **Defensive ingestion** — pre-ingest prompt injection sanitizer (`scripts/sanitize_ingest.py`) stripping invisible tokens, malicious HTML, and override directives
-- **Webhook security** — HMAC-SHA256 signature generation (`bin/bunker-alert.sh`) for tamper-proof alerting
-- **Test automation** — 6 suites (`make test` including `test-unit`), GitHub Actions CI on every push/PR
+- **Webhook alert signing** — `bin/bunker-alert.sh` generates an HMAC-SHA256 signature; the reviewed alerter does not validate it
+- **Test tooling** — `make test-core` checks knowledge workflows without Docker; `make test-extensions` validates optional n8n assets, and `make test` runs both
 - **Evidence vault** — `report.zip` and `security-audit-report.json` indexed with SHA256
 - **Integrity engine** — automated vault health scripts with Markdown + JSON reports
 - **Command Center** — dashboard + agent queue + handovers + governance
@@ -113,16 +119,16 @@
 | Dimension | Bunker OS | claude-obsidian |
 |---|---|---|
 | Version | v1.4.0 | v1.9.2 |
-| Purpose | Operations + automation + security | PKM / second brain |
+| Purpose | Local-first personal knowledge workflow; optional agent and automation tools | PKM / second brain |
 | Harness | OpenCode | Claude Code (plugin) |
 | Language | English | English |
 | Skills | 13 operational | 15 research |
 | Async automation | n8n on Docker | None |
 | Text retrieval | SQLite FTS5 + BM25 (incremental, stdlib) | BM25 + API + rerank |
-| Tests | 6 suites (unit + integration + CI) | ~1,240 (9 suites) |
+| Test tooling | Core and extension checks are distinct; CI runs `make test` | ~1,240 (9 suites) |
 | Evidence checksums | ✅ | ❌ |
 | Dead Letter Queue | ✅ | ❌ |
-| Multi-channel alerts | Slack / Telegram / Discord (HMAC-SHA256) | ❌ |
+| Multi-channel alerts | Optional workflows; sender-generated HMAC is not validated by reviewed alerter | ❌ |
 | Security sanitization | Pre-ingest anti-injection | ❌ |
 | Multi-methodology | ❌ | LYT / PARA / Zettelkasten |
 | Multi-writer safe | ✅ (`fcntl.flock` + atomic rename) | ✅ |
@@ -184,12 +190,14 @@ When you need context:
 #### CLI Scripts
 
 ```bash
-make test                              # 6 suites (unit + integration)
+make test-core                         # Core checks; no Docker or n8n configuration
+make test-extensions                   # Optional n8n workflow/config validation
+make test                              # Core + extension validation
 ./bin/bunker-check.sh                  # Local definition of done
 ./bin/wiki-integrity.sh                # Scan for orphans and broken links
 ./bin/evidence-index.sh                # Index evidence with SHA256
 ./bin/vault-lock.sh append wiki/log.md # Concurrency-safe atomic append
-./bin/bunker-alert.sh target info "msg"# Send HMAC-SHA256 signed alert to n8n
+./bin/bunker-alert.sh target info "msg" # Optional n8n alert; sender signature is not validated by reviewed alerter
 ./bin/bunker.sh init                   # Vault health check
 ./bin/wiki-sync.sh --apply             # Sync + commit wiki
 python3 scripts/fts_engine.py index    # SQLite FTS5 incremental indexation
@@ -198,7 +206,7 @@ python3 scripts/sanitize_ingest.py doc # Pre-ingest prompt injection check
 python3 scripts/retrieve.py "query"    # Legacy BM25 text retrieval
 ```
 
-### `autoresearch` — autonomous research loop
+### `autoresearch` — research support for the knowledge workflow
 
 Configurable at `skills/autoresearch/references/program.md`:
 
@@ -269,16 +277,16 @@ Not bundled in the repo, but available when the ECC skill bundle is installed.
 
 ---
 
-## n8n Automation
+## Optional n8n Automation
 
-n8n is the Bunker's async "nervous system." It runs on Docker and exposes an MCP bridge for OpenCode.
+n8n is an optional extension for asynchronous workflows; the vault and local knowledge tools do not depend on it. Workflow activation and maturity vary, so check the workflow table before relying on a flow. This is not a claim of enterprise readiness or complete security.
 
 ### Available Workflows
 
 | Workflow | Nodes | Status | Description |
 |---|:---:|---|---|
 | Health Check | 2 | 🟢 Active | System health check every 5 min |
-| Ultimate Alerter | 2 | 🟢 Active | Multi-channel alert via webhook (HMAC-SHA256) |
+| Ultimate Alerter | 2 | 🟢 Active | Multi-channel webhook alert; sender signature is not validated by the reviewed alerter |
 | Dead Letter Queue | 5 | ⚪ Inactive | Error trigger: captures all workflow errors |
 | AOC v4 Enterprise | 37 | ⚪ Inactive | Pipeline: webhook → AI triage → GitHub → ... |
 
@@ -297,7 +305,7 @@ n8n is the Bunker's async "nervous system." It runs on Docker and exposes an MCP
 5. **Notifications** — Build notification message → Send via Slack, Telegram, Discord (parallel)
 6. **Audit** — Write audit log → Return final status
 
-**Diagram simplified (26 nodes represented) — workflow real tiene 37 nodos, ver `automation/n8n-lab/workflows/bunker-aoc-v4-enterprise.json` para el flujo completo con todos los pasos de validación y logging por canal.**
+**Diagram simplified (26 nodes represented) — workflow real tiene 37 nodos, ver `extensions/n8n/workflows/bunker-aoc-v4-enterprise.json` para el flujo completo con todos los pasos de validación y logging por canal.**
 
 ### Dead Letter Queue
 
@@ -313,7 +321,7 @@ Catches errors from **any** workflow in the instance. Persists the last 200 erro
 
 ### Infrastructure
 
-Configure environment variables in `automation/n8n-lab/.env`:
+Configure optional n8n environment variables in `extensions/n8n/.env`:
 
 ```yaml
 N8N_CONCURRENCY_PRODUCTION_LIMIT=20   # High concurrency limit tuned for production
@@ -356,7 +364,7 @@ wiki/ (persistent knowledge)
 
 ```
 OpenCode (skills) / Local CLI
-  ├→ bin/bunker-alert.sh (HMAC-SHA256 signature)
+  ├→ bin/bunker-alert.sh (generates HMAC-SHA256 header; receiver validation is not implemented in reviewed alerter)
   └→ n8n Docker (localhost:5678)
        ├→ Webhooks → AOC pipeline → GitHub Issues
        ├→ Schedule → Health Check (5 min)
@@ -413,19 +421,18 @@ python3 scripts/fts_engine.py "n8n docker automation" --top 5
 
 | Suite | Tests | What it validates |
 |---|:---:|---|
-| `test-workflows` | 186+ | All n8n JSONs parseable, valid connections, no orphans |
-| `test-wiki` | 20+ | Essential files exist, valid frontmatter, docker running |
-| `test-scripts` | 65+ | Bash syntax, shebang, executables, no secrets, `go vet` |
-| `test-yaml` | 2 | CI and docker-compose YAML valid |
-| `test-retrieve` | 2 | BM25 / FTS5 index exists, search returns results |
-| `test-unit` | 11+ | Python unit tests (SQLite FTS5, POSIX File Locking, Prompt Sanitizer) |
+| `test-core` | Core | Wiki integrity, shell checks, retrieval, unit tests; no Docker/n8n `.env` required |
+| `test-extensions` | Optional | n8n workflow JSON and compose YAML validation; does not start Docker |
+| `test` | Both | Runs core and optional extension validation |
 
 ### CI
 
-Runs on every push/PR to `main` — 6 suites across Python + Go + bash.
+The GitHub Actions workflow runs `make test` on pushes and pull requests to `main`.
 
 ```bash
-make test    # Runs all 6 suites
+make test-core        # Core checks without Docker/n8n configuration
+make test-extensions  # Optional extension static checks
+make test             # Run both core and extension checks
 ```
 
 ### Secrets scanned
@@ -470,7 +477,7 @@ opencode-obsidian/
 │   ├── sanitize_ingest.py        Pre-ingest prompt injection & payload sanitizer
 │   ├── bm25-index.py             BM25 indexer
 │   └── retrieve.py               Search orchestrator
-├── tests/                        6 suites (unit + integration)
+├── tests/                        Core + optional extension checks
 │   ├── test_workflow_connections.py
 │   ├── test_wiki_integrity.sh
 │   ├── test_scripts.sh
@@ -478,17 +485,15 @@ opencode-obsidian/
 │   ├── test_vault_lock.py
 │   └── test_sanitize_ingest.py
 ├── Makefile                      Test targets & root runner
-├── bin/                          16 shell scripts + Go source + binary
+├── bin/                          Core commands + compatibility shims
 │   ├── bunker-check.sh           Full health check
 │   ├── vault-lock.sh             CLI wrapper for atomic lock & write
-│   ├── bunker-alert.sh           HMAC-SHA256 signed n8n alert trigger
+│   ├── bunker-alert.sh           Optional n8n alert compatibility entry point
 │   ├── wiki-integrity.sh         Integrity scan
 │   └── evidence-index.sh         Evidence indexing
-├── automation/
-│   └── n8n-lab/                  Docker + workflows (submodule)
-│       ├── docker-compose.yml
-│       ├── .env
-│       └── workflows/
+├── extensions/
+│   ├── n8n/                      Optional n8n/AOC workflows, setup, and alert implementation
+│   └── operations/               Optional host/repository tools; legacy bin/ shims remain
 ├── wiki/                         Obsidian vault (200+ pages)
 │   ├── hot.md                    Recent context
 │   ├── index.md                  Master catalog
@@ -517,7 +522,7 @@ opencode-obsidian/
 <details>
 <summary><b>What's the difference between Bunker OS and claude-obsidian?</b></summary><br>
 
-Both projects share a common origin but diverged in purpose. claude-obsidian is a second brain for PKM/research. Bunker OS is an operations system with n8n automation, security, alerts, evidence, and dead letter queue handling. Use Bunker OS when you need async workflows + audit trails. Use claude-obsidian when you want to focus on research and note organization.
+Both projects share a common origin. Bunker OS focuses on a local-first personal knowledge workflow: capture, organize, retrieve, and preserve context in an Obsidian vault. Its scripts, agent skills, and optional n8n workflows support that core. Use the vault without n8n; automation maturity varies.
 
 </details>
 
@@ -531,7 +536,7 @@ Technically yes (scripts are bash and Python, tests are Makefile, n8n is Docker)
 <details>
 <summary><b>Where is data stored?</b></summary><br>
 
-Everything is local. The vault is a folder of Markdown files on your disk. n8n runs on local Docker. No cloud data.
+The vault is a folder of Markdown files on your disk. Optional n8n can run locally with Docker. External tools or user-configured sync may involve other services; this project does not guarantee that every workflow or integration keeps all data local.
 
 </details>
 
@@ -562,7 +567,7 @@ A global workflow that catches errors from any other n8n workflow. Classifies se
 Requires: OpenRouter API key, Discord webhook URL, and GitHub credentials in n8n.
 
 **Steps:**
-1. Set `OPENROUTER_API_KEY`, `DISCORD_WEBHOOK_URL`, `GITHUB_PAT` in `automation/n8n-lab/.env`
+1. Set `OPENROUTER_API_KEY`, `DISCORD_WEBHOOK_URL`, `GITHUB_PAT` in `extensions/n8n/.env`
 2. In n8n UI (http://localhost:5678), import the AOC v4 Enterprise JSON workflow
 3. Toggle the workflow to "Active"
 4. Check the Health Check dashboard to verify all channels are reachable

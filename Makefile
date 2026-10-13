@@ -1,26 +1,25 @@
-# Bunker OS — Makefile
-# Test runner para validación del vault, scripts y workflows n8n.
-
-.PHONY: test test-workflows test-wiki test-scripts test-retrieve test-yaml test-unit test-all help
+# Local-first knowledge workflow test targets.
+.PHONY: test test-core test-extensions test-workflows test-wiki test-scripts test-retrieve test-yaml test-unit test-all help
 
 help:
-	@echo "Bunker OS Test Targets:"
-	@echo "  make test-workflows   Validar JSONs de workflows n8n (conexiones, nodos)"
-	@echo "  make test-wiki        Health check del vault (archivos, frontmatter)"
-	@echo "  make test-scripts     Validar scripts (sintaxis, secretos, ejecutables)"
-	@echo "  make test-retrieve    Validar índice BM25 y text retrieval"
-	@echo "  make test-unit        Validar suites unitarias Python (FTS5, Locking, Sanitizer)"
-	@echo "  make test-yaml        Validar YAMLs (CI, compose)"
-	@echo "  make test (default)   Ejecutar todas las suites"
-	@echo "  make test-all         Alias de make test"
+	@echo "Knowledge workflow test targets:"
+	@echo "  make test-core       Core checks; no Docker or n8n configuration required"
+	@echo "  make test-extensions Optional n8n workflow/config validation"
+	@echo "  make test            Core plus extension checks"
+	@echo "  make test-unit       Python unit tests"
+	@echo "  make test-retrieve   BM25 retrieval checks"
 
-test: test-yaml test-workflows test-wiki test-scripts test-retrieve test-unit
+test: test-core test-extensions
 	@echo ""
-	@echo "🎉 Todas las suites pasaron"
+	@echo "🎉 Core and extension suites passed"
+
+test-core: test-yaml test-wiki test-scripts test-retrieve test-unit
+
+test-extensions: test-workflows test-yaml-extensions
 
 test-workflows:
 	@echo "========================================"
-	@echo "  Suite: n8n Workflow Connections"
+	@echo "  Suite: Optional n8n Workflow Connections"
 	@echo "========================================"
 	@python3 tests/test_workflow_connections.py
 	@echo ""
@@ -40,12 +39,10 @@ test-scripts:
 	@echo ""
 
 test-yaml:
-	@echo "========================================"
-	@echo "  Suite: YAML Validation"
-	@echo "========================================"
-	@python3 -c "import yaml; yaml.safe_load(open('.github/workflows/test.yml')); print('  ✅ test.yml valido')" 2>/dev/null || echo "  ⚠️  yaml no disponible (pip install pyyaml)"
-	@python3 -c "import yaml; yaml.safe_load(open('automation/n8n-lab/docker-compose.yml')); print('  ✅ docker-compose.yml valido')" 2>/dev/null || echo "  ⚠️  yaml no disponible"
-	@echo ""
+	@python3 -c "import yaml; yaml.safe_load(open('.github/workflows/test.yml')); print('  ✅ CI YAML valid')" 2>/dev/null || echo "  ⚠️  yaml no disponible (pip install pyyaml)"
+
+test-yaml-extensions:
+	@python3 -c "import yaml; yaml.safe_load(open('extensions/n8n/docker-compose.yml')); print('  ✅ n8n compose YAML valid')" 2>/dev/null || echo "  ⚠️  yaml no disponible"
 
 test-retrieve:
 	@echo "========================================"
@@ -54,13 +51,11 @@ test-retrieve:
 	@python3 scripts/retrieve.py status > /dev/null 2>&1 || python3 scripts/bm25-index.py build
 	@python3 scripts/retrieve.py status > /dev/null 2>&1 && echo "  ✅ Índice BM25 existe" || (echo "  ❌ Índice BM25 no encontrado" && exit 1)
 	@python3 scripts/retrieve.py "test query búsqueda" --top 2 > /dev/null 2>&1 && echo "  ✅ Búsqueda BM25 funciona" || (echo "  ❌ Búsqueda BM25 falló" && exit 1)
-	@echo ""
 
 test-unit:
 	@echo "========================================"
 	@echo "  Suite: Unit Tests (FTS5, Lock, Sanitize)"
 	@echo "========================================"
 	@python3 -m unittest discover -s tests -p "test_*.py"
-	@echo ""
 
 test-all: test

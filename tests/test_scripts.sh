@@ -30,7 +30,8 @@ echo ""
 
 # === 1. Sintaxis bash ===
 echo "--- Sintaxis Bash ---"
-for script in "${VAULT_DIR}"/bin/*.sh; do
+readarray -d '' -t shell_scripts < <(find "${VAULT_DIR}/bin" "${VAULT_DIR}/extensions" -type f -name '*.sh' -print0)
+for script in "${shell_scripts[@]}"; do
     name=$(basename "$script")
     if [ ! -f "$script" ]; then
         test "${name}" false "no es archivo"
@@ -46,7 +47,7 @@ echo ""
 
 # === 2. Shebang correcto ===
 echo "--- Shebang ---"
-for script in "${VAULT_DIR}"/bin/*.sh; do
+for script in "${shell_scripts[@]}"; do
     name=$(basename "$script")
     first_line=$(head -1 "$script" 2>/dev/null || echo "")
     if [[ "$first_line" == "#!/usr/bin/env bash" ]] || [[ "$first_line" == "#!/bin/bash" ]] || [[ "$first_line" == "#!/usr/bin/bash" ]]; then
@@ -59,7 +60,7 @@ echo ""
 
 # === 3. Ejecutable ===
 echo "--- Ejecutable ---"
-for script in "${VAULT_DIR}"/bin/*.sh; do
+for script in "${shell_scripts[@]}"; do
     name=$(basename "$script")
     if [ -x "$script" ]; then
         test "${name} ejecutable" true
@@ -80,7 +81,7 @@ SECRET_PATTERNS=(
     'xox[baprs]-[0-9A-Za-z-]{10,}' # Slack tokens
 )
 
-for script in "${VAULT_DIR}"/bin/*.sh; do
+for script in "${shell_scripts[@]}"; do
     name=$(basename "$script")
     found=false
     for pattern in "${SECRET_PATTERNS[@]}"; do

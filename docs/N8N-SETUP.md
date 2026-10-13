@@ -1,48 +1,39 @@
-# n8n Orchestrator Setup Guide
+# Optional n8n Extension Setup
 
-> Esta guía explica cómo configurar el cerebro de automatización del Bunker usando n8n en Docker.
+n8n/AOC automation is optional and is not required for local capture, sanitization, retrieval, or vault integrity. The extension lives in `extensions/n8n/`.
 
-## 🏗️ 1. Levantar el Laboratorio (Docker)
-El Bunker utiliza una instancia local de n8n para orquestar alertas y tareas en segundo plano.
+## Prerequisites and setup
 
-### Requisitos:
-- Docker y Docker Compose instalados.
-- Arch Linux o sistema compatible con Bash.
+1. Install Docker Engine and the Docker Compose plugin.
+2. From the repository root, copy `extensions/n8n/.env.example` to `extensions/n8n/.env`, configure it locally, and set restrictive permissions (`chmod 600 extensions/n8n/.env`). Never commit or print `.env` contents.
+3. Start the optional service from the extension directory with `./setup.sh` (or `docker compose up -d`).
+4. Open `http://localhost:5678` and import workflows from `extensions/n8n/workflows/` as needed. Keep `Bunker Ultimate Alerter` inactive. Before activating it, configure receiver authentication directly on its Webhook node: use Header Auth bound to a strong, unique local secret. The workflow does not validate the sender's HMAC header, so sender-side signing is not receiver authentication.
+5. Set `AOC_WEBHOOK_SECRET` to a strong, unique local secret before using the alert sender; it fails closed when unset.
+6. To send alerts from ingestion, explicitly opt in with `BUNKER_N8N_ALERTS=1`. Normal ingestion does not contact n8n.
 
-### Pasos:
-1. Navega a la carpeta de tu lab: `cd ~/n8n-lab/workflows`.
-2. Ejecuta el script de inicio: `./setup.sh`.
-3. Accede a `http://localhost:5678`.
+The legacy `bin/bunker-alert.sh` command delegates to `extensions/n8n/bin/bunker-alert.sh`. `sync-flows.sh` remains a repository-root compatibility wrapper for `extensions/n8n/bin/sync-flows.sh`.
 
-## 📡 2. Conectar el Bunker (Webhook)
-Para que el agente pueda enviarte alertas:
-1. Crea un nuevo Workflow en n8n.
-2. Importa el archivo JSON: `wiki/blueprints/N8N-SECURITY-ALERT.md` (o el Ultimate Alerter).
-3. Configura tus credenciales de Telegram o Slack.
-4. **IMPORTANTE**: Pon el switch del workflow en **ACTIVE** (arriba a la derecha).
+## Optional MCP connection
 
-## 🔌 3. Configurar el Servidor MCP
-Para que el agente "vea" tus flujos de n8n de forma nativa:
-1. En n8n, ve a **Settings** -> **AI** y habilita **"Enable instance-level MCP access"**.
-2. Genera un API Key en **Settings** -> **Public API**.
-3. Añade el siguiente bloque a tu `opencode.json`:
+In OpenCode's `~/.config/opencode/opencode.json`, an n8n instance may be registered as an optional remote MCP server:
 
 ```json
-"n8n-mcp": {
-  "type": "http",
-  "url": "http://localhost:5678/mcp-server/http",
-  "headers": {
-    "Authorization": "Bearer <TU_TOKEN>"
+{
+  "mcp": {
+    "n8n-mcp": {
+      "type": "remote",
+      "url": "http://localhost:5678/mcp-server/http",
+      "enabled": true,
+      "oauth": false
+    }
   }
 }
 ```
 
-## 🛠️ Troubleshooting (Auto-Healing)
-Si te olvidas la contraseña de administrador de n8n:
-```bash
-docker exec -u node n8n_meco_lab n8n user-management:reset
-docker restart n8n_meco_lab
-```
+Configure authentication according to the local n8n setup. Do not commit tokens or credentials.
 
----
-**Last Updated**: 2026-04-19
+## Diagnostics and validation
+
+- Optional live/config diagnostics: `extensions/n8n/bin/check-n8n.sh` (requires Docker and local `.env`).
+- Static extension validation, no Docker startup: `make test-workflows` and `make test-yaml-extensions`.
+- Full repository validation: `make test`. Core-only validation without Docker/n8n: `make test-core`.

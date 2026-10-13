@@ -73,6 +73,10 @@ Then scaffold the full wiki structure.
 
 ---
 
+## Optional Extensions
+
+The core knowledge workflow does not require Docker or n8n. The optional n8n/AOC extension is in `extensions/n8n/` and documented in [N8N-SETUP.md](N8N-SETUP.md). Optional host/repository utilities are in `extensions/operations/`; their former `bin/` commands remain compatibility shims. Review `extensions/operations/README.md` before using commands that affect Git, GitHub, or host configuration.
+
 ## First Steps
 
 ### 1. Scaffold the vault

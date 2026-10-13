@@ -92,17 +92,6 @@ check_frontmatter "wiki/index.md" "updated" "wiki/index.md"
 # BUNKER_RULES.md no usa frontmatter YAML por diseño, se saltea
 echo ""
 
-# === 4. n8n lab ===
-echo "--- n8n Lab ---"
-check_file_exists "automation/n8n-lab/docker-compose.yml" "docker-compose.yml"
-check_file_exists "automation/n8n-lab/.env" ".env"
-if docker ps --format '{{.Names}}' 2>/dev/null | grep -q n8n; then
-    test "n8n container running" true
-else
-    echo "  ⚠️  [WARN] n8n container not running (offline mode)"
-fi
-echo ""
-
 # === 5. Skills y estructura ===
 echo "--- Skills ---"
 check_file_exists "skills/autoresearch/SKILL.md" "skills/autoresearch/SKILL.md"

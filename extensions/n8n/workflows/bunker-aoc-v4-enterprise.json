@@ -1,0 +1,681 @@
+{
+  "name": "Bunker AOC v4 Enterprise",
+  "nodes": [
+    {
+      "id": "v4-webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bunker-aoc-v4",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "AOC Entry Point",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 240],
+      "webhookId": "v4-aoc-entry"
+    },
+    {
+      "id": "v4-ingress",
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\nfunction slug(v) {\n  return String(v || 'unknown').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'unknown';\n}\nfunction hash(v) {\n  let h = 5381;\n  const t = String(v || '');\n  for (let i = 0; i < t.length; i++) h = ((h << 5) + h) + t.charCodeAt(i);\n  return (h >>> 0).toString(16).padStart(8, '0');\n}\n\nconst headers = $execution?.context?.webhook?.headers || item.headers || {};\nconst body = item.body || item;\nconst correlationId = headers['x-correlation-id'] || body.correlationId || hash(JSON.stringify(body) + Date.now());\nconst source = headers['x-aoc-source'] || body.source || 'webhook';\nconst fingerprint = hash(JSON.stringify(body));\n\nreturn [{\n  json: {\n    okToProceed: true,\n    correlationId,\n    fingerprint,\n    source,\n    title: body.title || body.name || 'Untitled Event',\n    description: body.description || body.message || '',\n    priority: body.priority || 'medium',\n    raw: body,\n    ingressAt: new Date().toISOString()\n  }\n}];\n"
+      },
+      "name": "Ingress Guard",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [280, 240]
+    },
+    {
+      "id": "v4-valid-if",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "ok-check",
+              "leftValue": "={{ $json.okToProceed }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+        },
+        "options": {}
+      },
+      "name": "IF Event Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [560, 240]
+    },
+    {
+      "id": "v4-rejected",
+      "parameters": {
+        "jsCode": "const e = $json;\nreturn [{ json: { ok: false, status: 'rejected', errors: ['Event validation failed'], correlationId: e.correlationId, fingerprint: e.fingerprint } }];\n"
+      },
+      "name": "Rejected Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [840, 420]
+    },
+    {
+      "id": "v4-redis-dedup",
+      "parameters": {
+        "jsCode": "// Redis Idempotency Check (usa staticData como placeholder)\n// En produccion reemplazar con Redis node\nconst e = $json;\nfunction getStore() { try { return $getWorkflowStaticData('global'); } catch (e) { return {}; } }\nconst store = getStore();\nstore.ledger = store.ledger || {};\n\nconst dedupKey = 'aoc:' + e.fingerprint;\nconst existing = store.ledger[dedupKey];\nif (existing) {\n  return [{ json: { ...e, idempotency: { replay: true, replayRecord: existing, dedupKey } } }];\n}\n\nstore.ledger[dedupKey] = { correlationId: e.correlationId, status: 'processing', ingressAt: e.ingressAt };\n// Prune ledger older than 100 entries\nconst keys = Object.keys(store.ledger);\nif (keys.length > 100) {\n  for (const k of keys.slice(0, keys.length - 100)) delete store.ledger[k];\n}\n\nreturn [{ json: { ...e, idempotency: { replay: false, dedupKey } } }];\n"
+      },
+      "name": "Redis Idempotency",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [840, 160]
+    },
+    {
+      "id": "v4-replay-if",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "replay-check",
+              "leftValue": "={{ $json.idempotency.replay }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+        },
+        "options": {}
+      },
+      "name": "IF Idempotent Replay",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1120, 160]
+    },
+    {
+      "id": "v4-cached",
+      "parameters": {
+        "jsCode": "const e = $json;\nreturn [{ json: { ok: true, cached: true, status: 'idempotent_replay', correlationId: e.correlationId, fingerprint: e.fingerprint } }];\n"
+      },
+      "name": "Cached Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1400, -80]
+    },
+    {
+      "id": "v4-ai-triage",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.OPENROUTER_API_KEY ? 'https://openrouter.ai/api/v1/chat/completions' : 'http://localhost:11434/api/generate' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "model", "value": "={{ $env.OPENROUTER_API_KEY ? 'mistralai/mistral-7b-instruct:free' : 'llama3.2' }}" },
+            { "name": "messages", "value": "={{ [ { role: 'system', content: 'Eres un triage de seguridad. Clasifica el evento en UNA de estas acciones:\\n- create: crear issue nuevo\\n- review: necesita revision humana\\n- duplicate: es duplicado\\n- emergency: critico, encolar urgente\\n\\nResponde SOLO con el nombre de la accion en JSON: {\"action\": \"...\", \"confidence\": 0-1, \"reason\": \"...\"}' }, { role: 'user', content: 'Evento: ' + JSON.stringify({ title: $json.title, description: $json.description, priority: $json.priority, source: $json.source }) } ] | toJson }}" },
+            { "name": "temperature", "value": 0.1 }
+          ]
+        },
+        "options": { "timeout": 15000 },
+        "sendQuery": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ $env.OPENROUTER_API_KEY ? 'Bearer ' + $env.OPENROUTER_API_KEY : '' }}" }
+          ]
+        }
+      },
+      "name": "AI Triage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1400, 240],
+      "continueOnFail": true
+    },
+    {
+      "id": "v4-ai-parse",
+      "parameters": {
+        "jsCode": "const e = $('Redis Idempotency').first().json;\nconst response = $json || {};\nlet action = 'create';\nlet confidence = 0;\nlet reason = 'AI fallback: parse error';\n\ntry {\n  const text = response.choices?.[0]?.message?.content || response.response || JSON.stringify(response);\n  const parsed = JSON.parse(text.replace(/```json|```|\\n/g, '').trim());\n  action = ['create','review','duplicate','emergency'].includes(parsed.action) ? parsed.action : 'create';\n  confidence = parsed.confidence || 0;\n  reason = parsed.reason || '';\n} catch (err) {\n  // fallback: si falla AI, crear issue\n}\n\nreturn [{ json: { ...e, ai: { action, confidence, reason } } }];\n"
+      },
+      "name": "Parse AI Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1680, 160]
+    },
+    {
+      "id": "v4-if-create",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "create-check",
+              "leftValue": "={{ $json.ai.action }}",
+              "rightValue": "create",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+        },
+        "options": {}
+      },
+      "name": "IF Create Action",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1960, 80]
+    },
+    {
+      "id": "v4-create-issue",
+      "parameters": {
+        "operation": "create",
+        "title": "={{ '[AOC] ' + $json.title }}",
+        "body": "={{ '## Evento AOC\\n**Correlation ID:** ' + $json.correlationId + '\\n**Fuente:** ' + $json.source + '\\n**Prioridad:** ' + $json.priority + '\\n**Confianza AI:** ' + $json.ai.confidence + '\\n**Razon:** ' + $json.ai.reason + '\\n**Descripcion:**\\n' + $json.description }}",
+        "owner": "={{ $env.GITHUB_OWNER }}",
+        "repository": "={{ $env.GITHUB_REPO }}",
+        "labels": {
+          "labels": ["aoc", "automated"]
+        }
+      },
+      "name": "Create GitHub Issue",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 2,
+      "position": [2240, -80]
+    },
+    {
+      "id": "v4-if-review",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "review-check",
+              "leftValue": "={{ $json.ai.action }}",
+              "rightValue": "review",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+        },
+        "options": {}
+      },
+      "name": "IF Review Action",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2240, 240]
+    },
+    {
+      "id": "v4-review-issue",
+      "parameters": {
+        "operation": "create",
+        "title": "='[REVIEW] ' + $json.title",
+        "body": "='## Revision Humana Requerida\\n**Correlation ID:** ' + $json.correlationId + '\\n**Confianza AI:** ' + $json.ai.confidence + '\\n**Razon:** ' + $json.ai.reason + '\\n**Descripcion:**\\n' + $json.description",
+        "owner": "={{ $env.GITHUB_OWNER }}",
+        "repository": "={{ $env.GITHUB_REPO }}",
+        "labels": {
+          "labels": ["aoc", "human-review"]
+        }
+      },
+      "name": "Create Review Issue",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 2,
+      "position": [2520, 160]
+    },
+    {
+      "id": "v4-if-emergency",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "emergency-check",
+              "leftValue": "={{ $json.ai.action }}",
+              "rightValue": "emergency",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+        },
+        "options": {}
+      },
+      "name": "IF Emergency Action",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2520, 400]
+    },
+    {
+      "id": "v4-emergency-queue",
+      "parameters": {
+        "jsCode": "const e = $json;\nfunction getStore() { try { return $getWorkflowStaticData('global'); } catch (e) { return {}; } }\nconst store = getStore();\nstore.emergency = store.emergency || [];\n\nstore.emergency.push({\n  ...e,\n  retryCount: 0,\n  maxRetries: Number($env.AOC_MAX_RETRIES || 5),\n  nextRetryAt: new Date(Date.now() + 300000).toISOString(),  // 5 min\n  queuedAt: new Date().toISOString()\n});\n// Max 50 items\nif (store.emergency.length > 50) store.emergency = store.emergency.slice(-50);\n\nreturn [{ json: { ok: true, status: 'emergency_queued', correlationId: e.correlationId } }];\n"
+      },
+      "name": "Emergency Queue",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2800, 480]
+    },
+    {
+      "id": "v4-build-notif",
+      "parameters": {
+        "jsCode": "const e = $json;\nconst outcome = 'create' in $('Create GitHub Issue').context ? 'created' :\n                'review' in $('Create Review Issue').context ? 'reviewed' :\n                'emergency' in $('Emergency Queue').context ? 'emergency' : 'duplicate';\n\nreturn [{\n  json: {\n    ...e,\n    outcome,\n    notification: {\n      title: e.title,\n      severity: e.ai?.action === 'emergency' ? 'CRITICAL' : e.priority === 'high' ? 'WARNING' : 'INFO',\n      summary: outcome === 'created' ? 'Issue creado' :\n               outcome === 'reviewed' ? 'Requiere revision' :\n               outcome === 'emergency' ? 'Encolado urgente' : 'Descartado (duplicado)',\n      correlationId: e.correlationId\n    }\n  }\n}];\n"
+      },
+      "name": "Build Notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2800, 240]
+    },
+    {
+      "id": "v4-if-slack",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "slack-check",
+              "leftValue": "={{ $env.SLACK_AOC_CHANNEL_ID || '' }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ],
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+        },
+        "options": {}
+      },
+      "name": "IF Slack Enabled",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [3080, 160]
+    },
+    {
+      "id": "v4-notify-slack",
+      "parameters": {
+        "channel": "={{ $env.SLACK_AOC_CHANNEL_ID }}",
+        "text": "={{ '*[AOC] ' + $json.notification.severity + '* ' + $json.notification.title + '\\n' + $json.notification.summary + '\\nCorrelation: ' + $json.correlationId }}"
+      },
+      "name": "Notify Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [3360, 80]
+    },
+    {
+      "id": "v4-after-slack",
+      "parameters": {},
+      "name": "After Slack",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [3640, 80]
+    },
+    {
+      "id": "v4-skip-slack",
+      "parameters": {},
+      "name": "Skip Slack",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [3360, 240]
+    },
+    {
+      "id": "v4-if-telegram",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "tg-check",
+              "leftValue": "={{ $env.TELEGRAM_AOC_CHAT_ID || '' }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ],
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+        },
+        "options": {}
+      },
+      "name": "IF Telegram Enabled",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [3640, 240]
+    },
+    {
+      "id": "v4-notify-tg",
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_AOC_CHAT_ID }}",
+        "text": "={{ '*AOC* ' + $json.notification.severity + '\\n' + $json.notification.title + '\\n' + $json.notification.summary + '\\n`' + $json.correlationId + '`' }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "name": "Notify Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 2,
+      "position": [3920, 160]
+    },
+    {
+      "id": "v4-after-tg",
+      "parameters": {},
+      "name": "After Telegram",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [4200, 160]
+    },
+    {
+      "id": "v4-skip-tg",
+      "parameters": {},
+      "name": "Skip Telegram",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [3920, 320]
+    },
+    {
+      "id": "v4-if-discord",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "dc-check",
+              "leftValue": "={{ $env.DISCORD_AOC_WEBHOOK_URL || '' }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ],
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+        },
+        "options": {}
+      },
+      "name": "IF Discord Enabled",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [4200, 320]
+    },
+    {
+      "id": "v4-notify-dc",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DISCORD_AOC_WEBHOOK_URL }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "content", "value": "={{ '**AOC ' + $json.notification.severity + '** ' + $json.notification.title + '\\n' + $json.notification.summary + '\\n`' + $json.correlationId + '`' }}" },
+            { "name": "username", "value": "Bunker AOC" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Notify Discord",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4480, 240]
+    },
+    {
+      "id": "v4-after-dc",
+      "parameters": {},
+      "name": "After Discord",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [4760, 240]
+    },
+    {
+      "id": "v4-skip-dc",
+      "parameters": {},
+      "name": "Skip Discord",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [4480, 400]
+    },
+    {
+      "id": "v4-write-audit",
+      "parameters": {
+        "jsCode": "const e = $json;\nfunction getStore() { try { return $getWorkflowStaticData('global'); } catch (e) { return {}; } }\nconst store = getStore();\nstore.audit = store.audit || [];\n\nstore.audit.push({\n  correlationId: e.correlationId,\n  fingerprint: e.fingerprint,\n  outcome: e.outcome || 'unknown',\n  source: e.source,\n  priority: e.priority,\n  action: e.ai?.action,\n  confidence: e.ai?.confidence,\n  severity: e.notification?.severity,\n  timestamp: new Date().toISOString()\n});\n\n// Keep last 500\nif (store.audit.length > 500) store.audit = store.audit.slice(-500);\n\nreturn [{ json: { ok: true, status: 'audited', correlationId: e.correlationId, auditCount: store.audit.length } }];\n"
+      },
+      "name": "Write Audit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5040, 240]
+    },
+    {
+      "id": "v4-final-status",
+      "parameters": {
+        "jsCode": "const e = $json;\nreturn [{ json: { ok: true, status: 'complete', correlationId: e.correlationId, timestamp: new Date().toISOString() } }];\n"
+      },
+      "name": "Final Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5320, 240]
+    },
+    {
+      "id": "v4-webhook-if",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "webhook-check",
+              "leftValue": "={{ $json.triggerType }}",
+              "rightValue": "reprocessor",
+              "operator": { "type": "string", "operation": "notEqual" }
+            }
+          ],
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+        },
+        "options": {}
+      },
+      "name": "IF Webhook Response",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [5600, 240]
+    },
+    {
+      "id": "v4-respond",
+      "parameters": {
+        "respondMode": "all",
+        "responseCode": 200,
+        "responseBody": "={{ JSON.stringify({ ok: true, correlationId: $json.correlationId, status: $json.status }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          }
+        }
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [5880, 160]
+    },
+    {
+      "id": "v4-repro-log",
+      "parameters": {},
+      "name": "Reprocessor Log",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [5880, 320]
+    },
+    {
+      "id": "v4-repro-trigger",
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "minutes", "minutesInterval": 5 }
+          ]
+        }
+      },
+      "name": "Emergency Reprocessor",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [560, 700]
+    },
+    {
+      "id": "v4-load-emergency",
+      "parameters": {
+        "jsCode": "function getStore() { try { return $getWorkflowStaticData('global'); } catch (e) { return {}; } }\nconst store = getStore();\nstore.emergency = store.emergency || [];\n\nconst now = Date.now();\nlet idx = -1;\nfor (let i = 0; i < store.emergency.length; i++) {\n  const q = store.emergency[i];\n  if ((q.retryCount || 0) < (q.maxRetries || 5) && Date.parse(q.nextRetryAt || q.queuedAt || 0) <= now) {\n    idx = i; break;\n  }\n}\n\nif (idx === -1) {\n  return [{ json: { hasEmergencyWork: false, status: 'idle' } }];\n}\n\nconst item = store.emergency.splice(idx, 1)[0];\nreturn [{ json: { ...item, triggerType: 'reprocessor', hasEmergencyWork: true, pipelineStage: 'reprocessor_loaded' } }];\n"
+      },
+      "name": "Load Emergency Item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [840, 700]
+    },
+    {
+      "id": "v4-repro-check",
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "work-check",
+              "leftValue": "={{ $json.hasEmergencyWork }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+        },
+        "options": {}
+      },
+      "name": "IF Has Emergency Work",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1120, 700]
+    },
+    {
+      "id": "v4-repro-idle",
+      "parameters": {},
+      "name": "Reprocessor Idle",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1400, 880]
+    }
+  ],
+  "connections": {
+    "AOC Entry Point": {
+      "main": [[ { "node": "Ingress Guard", "type": "main", "index": 0 } ]]
+    },
+    "Ingress Guard": {
+      "main": [[ { "node": "IF Event Valid", "type": "main", "index": 0 } ]]
+    },
+    "IF Event Valid": {
+      "main": [
+        [ { "node": "Redis Idempotency", "type": "main", "index": 0 } ],
+        [ { "node": "Rejected Response", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Redis Idempotency": {
+      "main": [[ { "node": "IF Idempotent Replay", "type": "main", "index": 0 } ]]
+    },
+    "IF Idempotent Replay": {
+      "main": [
+        [ { "node": "Cached Response", "type": "main", "index": 0 } ],
+        [ { "node": "AI Triage", "type": "main", "index": 0 } ]
+      ]
+    },
+    "AI Triage": {
+      "main": [[ { "node": "Parse AI Decision", "type": "main", "index": 0 } ]]
+    },
+    "Parse AI Decision": {
+      "main": [[ { "node": "IF Create Action", "type": "main", "index": 0 } ]]
+    },
+    "IF Create Action": {
+      "main": [
+        [ { "node": "Create GitHub Issue", "type": "main", "index": 0 } ],
+        [ { "node": "IF Review Action", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Create GitHub Issue": {
+      "main": [[ { "node": "Build Notification", "type": "main", "index": 0 } ]]
+    },
+    "IF Review Action": {
+      "main": [
+        [ { "node": "Create Review Issue", "type": "main", "index": 0 } ],
+        [ { "node": "IF Emergency Action", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Create Review Issue": {
+      "main": [[ { "node": "Build Notification", "type": "main", "index": 0 } ]]
+    },
+    "IF Emergency Action": {
+      "main": [
+        [ { "node": "Emergency Queue", "type": "main", "index": 0 } ],
+        [ { "node": "Build Notification", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Build Notification": {
+      "main": [[ { "node": "IF Slack Enabled", "type": "main", "index": 0 } ]]
+    },
+    "IF Slack Enabled": {
+      "main": [
+        [ { "node": "Notify Slack", "type": "main", "index": 0 } ],
+        [ { "node": "Skip Slack", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Notify Slack": {
+      "main": [[ { "node": "After Slack", "type": "main", "index": 0 } ]]
+    },
+    "After Slack": {
+      "main": [[ { "node": "IF Telegram Enabled", "type": "main", "index": 0 } ]]
+    },
+    "Skip Slack": {
+      "main": [[ { "node": "IF Telegram Enabled", "type": "main", "index": 0 } ]]
+    },
+    "IF Telegram Enabled": {
+      "main": [
+        [ { "node": "Notify Telegram", "type": "main", "index": 0 } ],
+        [ { "node": "Skip Telegram", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Notify Telegram": {
+      "main": [[ { "node": "After Telegram", "type": "main", "index": 0 } ]]
+    },
+    "After Telegram": {
+      "main": [[ { "node": "IF Discord Enabled", "type": "main", "index": 0 } ]]
+    },
+    "Skip Telegram": {
+      "main": [[ { "node": "IF Discord Enabled", "type": "main", "index": 0 } ]]
+    },
+    "IF Discord Enabled": {
+      "main": [
+        [ { "node": "Notify Discord", "type": "main", "index": 0 } ],
+        [ { "node": "Skip Discord", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Notify Discord": {
+      "main": [[ { "node": "After Discord", "type": "main", "index": 0 } ]]
+    },
+    "After Discord": {
+      "main": [[ { "node": "Write Audit", "type": "main", "index": 0 } ]]
+    },
+    "Skip Discord": {
+      "main": [[ { "node": "Write Audit", "type": "main", "index": 0 } ]]
+    },
+    "Write Audit": {
+      "main": [[ { "node": "Final Status", "type": "main", "index": 0 } ]]
+    },
+    "Final Status": {
+      "main": [[ { "node": "IF Webhook Response", "type": "main", "index": 0 } ]]
+    },
+    "IF Webhook Response": {
+      "main": [
+        [ { "node": "Respond to Webhook", "type": "main", "index": 0 } ],
+        [ { "node": "Reprocessor Log", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Emergency Reprocessor": {
+      "main": [[ { "node": "Load Emergency Item", "type": "main", "index": 0 } ]]
+    },
+    "Load Emergency Item": {
+      "main": [[ { "node": "IF Has Emergency Work", "type": "main", "index": 0 } ]]
+    },
+    "IF Has Emergency Work": {
+      "main": [
+        [ { "node": "Parse AI Decision", "type": "main", "index": 0 } ],
+        [ { "node": "Reprocessor Idle", "type": "main", "index": 0 } ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "staticData": null,
+  "tags": ["bunker", "aoc", "v4"],
+  "active": false,
+  "versionId": "v4-enterprise",
+  "meta": {
+    "description": "AOC v4 Enterprise: Webhook + AI Triage + Redis Idempotency + GitHub + Slack/Telegram/Discord + Reprocessor"
+  }
+}

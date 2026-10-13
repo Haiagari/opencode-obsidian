@@ -96,14 +96,15 @@ Default safe commands:
 ./bin/bunker.sh save
 ```
 
-Commands with external effects require explicit `--apply`:
+These operations require explicit `--apply` before external effects:
 
 ```bash
 ./bin/wiki-sync.sh --apply
 ./bin/bunker-push.sh --apply "commit message"
-./bin/bunker-alert.sh --apply "target" "LEVEL" "message"
 ./bin/bunker-pulse.sh --apply
 ```
+
+Alerts are different: `bunker-alert.sh` sends directly and has no `--apply` dry-run gate. Invoke it as `./bin/bunker-alert.sh "target" "LEVEL" "message"`. Sending requires a strong local `AOC_WEBHOOK_SECRET`. Keep the n8n receiver workflow inactive until its Webhook node is configured with Header Auth.
 
 ## 7. Obsidian Bases
 

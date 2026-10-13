@@ -135,7 +135,7 @@ Do NOT read the wiki for general coding questions.
 1. **obsidian-vault** (`~/.config/opencode/opencode.json`):
    - `list_notes`, `read_note`, `search_notes`, `write_note`
    - Pointed at this repo's `wiki/`
-2. **n8n-mcp**: n8n automation workflows in `automation/n8n-lab/`
+2. **n8n-mcp**: optional n8n workflows in `extensions/n8n/`
 
 ## Tool Governance
 
@@ -174,4 +174,4 @@ GitHub Actions in `.github/workflows/test.yml`. Runs on every push/PR to main.
 
 - Skills: `skills/`
 - Scripts: `scripts/fts_engine.py`, `scripts/vault_lock.py`, `scripts/sanitize_ingest.py`, `scripts/retrieve.py`
-- Binary/CLI: `bin/vault-lock.sh`, `bin/bunker-alert.sh`, `bin/bunker-check.sh`
+- Core binary/CLI: `bin/vault-lock.sh`, `bin/bunker-check.sh`; optional alert compatibility entry point: `bin/bunker-alert.sh` (`extensions/n8n/`). Operations utilities live in `extensions/operations/`.

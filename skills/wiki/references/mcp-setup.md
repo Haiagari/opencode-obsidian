@@ -13,7 +13,9 @@ MCP (Model Context Protocol) allows OpenCode to connect directly to tools, exter
 
 ---
 
-## 1. Remote MCP: n8n Automation Engine
+## 1. Optional Remote MCP: n8n Automation Extension
+
+n8n is not required for vault access or core knowledge workflows. Its Docker-based extension lives in `extensions/n8n/`; see `docs/N8N-SETUP.md` for opt-in setup.
 
 To connect OpenCode to a remote or local n8n instance (`n8n_meco_lab`), configure a remote MCP endpoint:
 

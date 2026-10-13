@@ -9,7 +9,7 @@ FAIL=0
 section() { printf '\n== %s ==\n' "$1"; }
 
 section "Bash syntax"
-if bash -n bin/*.sh; then
+if find bin extensions -type f -name '*.sh' -print0 | xargs -0 -r -n1 bash -n; then
   echo "OK: shell scripts parse."
 else
   echo "FAIL: shell syntax issue."
@@ -43,19 +43,6 @@ if grep -RIn "$NEEDLE" bin README.md PROJECT.md AGENTS.md WIKI.md BUNKER_RULES.m
   FAIL=1
 else
   echo "OK: no hard-coded legacy vault path found in active docs/scripts."
-fi
-
-section "Environment file permissions"
-if [[ -f automation/n8n-lab/.env ]]; then
-  ENV_PERMS=$(stat -c "%a" automation/n8n-lab/.env 2>/dev/null || stat -f "%Lp" automation/n8n-lab/.env 2>/dev/null || echo "unknown")
-  if [[ "$ENV_PERMS" == "600" ]]; then
-    echo "OK: automation/n8n-lab/.env has strict 600 permissions."
-  else
-    echo "FAIL: automation/n8n-lab/.env permissions must be 600 (current: $ENV_PERMS). Run: chmod 600 automation/n8n-lab/.env"
-    FAIL=1
-  fi
-else
-  echo "OK: automation/n8n-lab/.env not present (clean template state)."
 fi
 
 section "Evidence index"

@@ -26,9 +26,15 @@ if [ -f "$SOURCE" ]; then
     echo "📥 Archivo sanitizado y copiado a .raw/$FILENAME"
 fi
 
-# 2. Notificar al Agente (Triggering logic)
-echo "🤖 Solicitando análisis agéntico..."
-
-"${VAULT_DIR}/bin/bunker-alert.sh" "Bunker-Ingest" "INFO" "📥 NUEVA FUENTE DETECTADA: Se ha iniciado la ingestión de $SOURCE. Procesando entidades y conceptos..."
+# 2. Optional n8n notification. Ingestion never depends on the extension.
+if [[ "${BUNKER_N8N_ALERTS:-0}" == "1" ]]; then
+    if "${VAULT_DIR}/bin/bunker-alert.sh" "Bunker-Ingest" "INFO" "📥 NUEVA FUENTE DETECTADA: Se ha iniciado la ingestión de $SOURCE. Procesando entidades y conceptos..."; then
+        echo "📡 Optional n8n alert sent."
+    else
+        echo "⚠️ Ingestion completed; optional n8n alert failed." >&2
+    fi
+else
+    echo "ℹ️ n8n notification skipped (set BUNKER_N8N_ALERTS=1 to opt in)."
+fi
 
 echo "✅ Proceso de ingestión iniciado. Esperando síntesis..."

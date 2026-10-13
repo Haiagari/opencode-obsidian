@@ -1,27 +1,26 @@
 # opencode-obsidian — Bunker OS v1.4.0
 
-This repository is an OpenCode agent environment and an Obsidian wiki vault.
+Bunker OS is a local-first personal knowledge workflow built around an Obsidian vault: capture information, sanitize and organize it, retrieve it, and preserve context and decisions over time. The vault is the source of truth; scripts and agent tools support the workflow, while n8n is optional. See [Product Direction](docs/product-direction.md).
 
 **Version:** 1.4.0  
-**Status:** Local-first operational knowledge system with n8n automation & multi-writer concurrency  
-**Tests:** 6 suites passing (`make test` with unit + integration suites)  
+**Status:** Personal knowledge vault and local workflow tooling; optional automation has varying maturity
+**Test tooling:** `make test-core` runs Docker-independent core checks; `make test-extensions` validates optional n8n assets, and `make test` runs both.
 **Vault path:** current repository root. Use `BUNKER_HOME` to override script resolution.
 
 ---
 
-## Core Identity
+## Product Identity and Workflow
 
-Bunker OS is not a traditional application. It is a local-first knowledge operating system for:
+The primary audience is an individual using the vault day to day. The core loop is:
 
-- AI session continuity
-- structured research (**autoresearch**, **/think** framework)
-- audit evidence preservation (**SHA256 checksums**)
-- project intelligence & defensive ingestion (**prompt injection sanitizer**)
-- agent-guided workflow (**n8n AOC v4**, **Dead Letter Queue**, **HMAC-SHA256 webhooks**)
-- SQLite FTS5 + BM25 text retrieval (**incremental hashing, zero-dependency**)
-- multi-writer concurrency (**POSIX `fcntl.flock` advisory locks + atomic renames**)
-- governance and decisions
-- visual command center operations
+1. Capture sources, research, conversations, and decisions.
+2. Sanitize and organize useful material as linked vault notes.
+3. Retrieve relevant notes through local text-search tools and focused queries.
+4. Preserve active context and decisions in durable notes, the index, and handovers.
+
+Current supporting capabilities include source-ingestion and sanitization scripts, bundled knowledge-workflow skills, SQLite FTS5/BM25 retrieval, vault integrity checks, and file-locking utilities. Agent tooling supports the workflow but is not required to make the Markdown vault useful. n8n workflows are an optional extension and have differing activation and maturity; they are not the primary product identity.
+
+For current capabilities, scope boundaries, and staged priorities, see [Product Direction](docs/product-direction.md).
 
 ---
 
@@ -32,11 +31,11 @@ Capture       → wiki/inbox, .raw, sanitize_ingest.py (prompt injection defense
 Normalize     → _templates, skills/wiki-ingest
 Concurrency   → vault_lock.py, bin/vault-lock.sh (POSIX fcntl.flock + atomic rename)
 Classify      → wiki/sources, entities, concepts, projects, comparisons
-Evidence      → report.zip, security-audit-report.json, evidence index (SHA256)
+Evidence      → optional report artifacts and evidence index (SHA256)
 Governance    → BUNKER_RULES, ADR template, knowledge supply chain
-Automation    → bin/ (Sync ops + HMAC signatures) + n8n (Async flows, alerts, DLQ)
+Optional ops  → extensions/operations/ (legacy bin/ shims); n8n in extensions/n8n/ (not core workflow)
 Retrieval     → SQLite FTS5 Engine (fts_engine.py, WAL mode, incremental SHA256) + BM25 ranking
-Testing       → 6 suites: workflows n8n, wiki integrity, scripts, YAML, retrieve, unit tests
+Testing       → make test-core (Docker-independent) + make test-extensions; make test runs both
 Agent Runtime → agents, commands, skills (13), hooks (7)
 Visualization → dashboard, canvases, Obsidian graph
 ```
@@ -61,13 +60,11 @@ Visualization → dashboard, canvases, Obsidian graph
 - **Anti-Prompt-Injection**: Identifies and defangs adversarial override phrases (e.g. "ignore previous instructions", "system prompt override", developer mode jailbreaks).
 - **Tag & Comment Neutralization**: Strips dangerous HTML tags (`<script>`, `<iframe>`, `<object>`) and malicious comments.
 
-### 4. Webhook HMAC-SHA256 Security (`bin/bunker-alert.sh`)
-- **Cryptographic Request Signing**: Signs JSON payloads sent to n8n webhooks using HMAC-SHA256 with `X-Bunker-Signature`.
-- **Tamper Resistance**: Prevents unauthorized or forged alert triggering.
+### 4. Optional webhook alert signing (`extensions/n8n/bin/bunker-alert.sh`; compatibility: `bin/bunker-alert.sh`)
+- The script generates an HMAC-SHA256 signature in the outgoing alert header. The reviewed alerter does not validate that signature; this is not end-to-end webhook verification or a security guarantee.
 
-### 5. n8n Production Concurrency & Scaling (`automation/n8n-lab/docker-compose.yml`)
-- **Concurrency Tuning**: Configured with `N8N_CONCURRENCY_PRODUCTION_LIMIT=20` to prevent memory bottlenecks.
-- **Automated Data Pruning**: Configured with `EXECUTIONS_DATA_PRUNE=true`, `EXECUTIONS_DATA_MAX_AGE=168` (7 days), and `EXECUTIONS_DATA_PRUNE_MAX_COUNT=50000`.
+### 5. n8n configuration
+- The compose configuration includes concurrency and execution-data pruning settings. These configuration values alone do not establish production readiness. n8n is optional and some documented workflows are inactive or experimental.
 
 ---
 
@@ -77,12 +74,12 @@ Visualization → dashboard, canvases, Obsidian graph
 - **SQLite FTS5 Engine**: Incremental indexing and BM25 ranking via stdlib `sqlite3`.
 - **Multi-Writer Locking**: POSIX `fcntl.flock` advisory locks and atomic file mutations.
 - **Defensive Ingestion**: Anti-prompt-injection and payload sanitization pipeline.
-- **HMAC-SHA256 Signatures**: Webhook payload security for `bunker-alert.sh`.
-- **Unit Testing Suite**: `make test-unit` covering all core Python subsystems.
+- **HMAC-SHA256 header generation**: `bunker-alert.sh` adds a signature to outgoing webhook requests; the reviewed alerter does not validate it, so this is not end-to-end webhook verification.
+- **Unit Testing Suite**: `make test-unit` adds tests for selected Python subsystems.
 
 ### Testing
-- `Makefile` with 6 targets: workflows, wiki, scripts, YAML, retrieve, unit.
-- Comprehensive unit test coverage in `tests/`.
+- `Makefile` separates core checks from optional n8n workflow and compose validation.
+- Tests cover selected behaviors in the listed subsystems; suite presence does not imply complete coverage or passing results.
 
 ### Infrastructure
 - docker-compose: `N8N_CONCURRENCY_PRODUCTION_LIMIT=20`, pruning and security limits.
@@ -123,13 +120,9 @@ Visualization → dashboard, canvases, Obsidian graph
 
 ---
 
-## The n8n Orchestrator Role
+## Optional n8n Extension
 
-n8n acts as the asynchronous execution engine and "nervous system" of the Bunker:
-
-- **Security & Decoupling**: API keys and external integrations live in n8n, keeping bash scripts clean and secure. Scripts fire webhooks to `localhost:5678`.
-- **Agentic MCP Bridge**: Gives OpenCode "hands" to trigger complex pipelines (e.g., assisted remediation) in a sandboxed manner.
-- **Complex Pipelines**: Manages retries, conditional logic, and LLM evaluations via visually orchestrated flows stored in `automation/n8n-lab`.
+n8n can support asynchronous workflows and integrations, but it is not required for capturing, organizing, or retrieving vault knowledge. The extension and setup guidance live in `extensions/n8n/` and `docs/N8N-SETUP.md`; workflow activation varies, so verify a workflow before relying on it. Do not interpret credential placement or configuration settings as proof of complete security, sandboxing, or enterprise readiness. Core ingestion alerts are opt-in with `BUNKER_N8N_ALERTS=1`.
 
 ---
 
@@ -148,23 +141,21 @@ n8n acts as the asynchronous execution engine and "nervous system" of the Bunker
 | SQLite FTS5 search | `python3 scripts/fts_engine.py "query"` |
 | Pre-ingest sanitizer | `python3 scripts/sanitize_ingest.py [file]` |
 | Full local check | `./bin/bunker-check.sh` |
-| Full test suite | `make test` (6 suites) |
+| Core checks | `make test-core` (no Docker/n8n config) |
+| Full test suite | `make test` (core + optional extension validation) |
 | BM25 text retrieval | `python3 scripts/retrieve.py "query"` |
 | Autoresearch | `/autoresearch [topic]` via OpenCode |
-| n8n status | `docker ps --filter name=n8n` |
+| Optional n8n status | `extensions/n8n/bin/check-n8n.sh` |
 
 ---
 
-## Safety Model
+## Safeguards and Limits
 
-- Concurrency safety guaranteed via POSIX `fcntl.flock` and atomic file replacements (`vault_lock.py`).
-- Untrusted ingestion sanitized against prompt injections, invisible characters, and malicious HTML (`sanitize_ingest.py`).
-- Webhook alerts cryptographically signed with HMAC-SHA256 (`bunker-alert.sh`).
-- Scripts resolve the vault through `BUNKER_HOME` or repository root.
-- External-effect scripts default to dry-run.
-- Ingest server binds to `127.0.0.1:9090` by default.
-- Evidence artifacts are indexed, not modified.
-- n8n secrets managed via `.env` (gitignored) + n8n credential vault.
+- `vault_lock.py` uses POSIX `fcntl.flock` and atomic replacement for supported file operations; this does not guarantee safety for every writer or environment.
+- `sanitize_ingest.py` targets specified prompt-injection markers, invisible characters, and selected HTML. Sanitization is a defense-in-depth aid, not complete protection against malicious content.
+- `bunker-alert.sh` generates an HMAC-SHA256 signature; the reviewed alerter does not validate it.
+- Scripts resolve the vault through `BUNKER_HOME` or the repository root. Verify individual script defaults and effects before use.
+- n8n configuration and secret storage do not constitute a complete security review or enterprise-readiness claim.
 
 ---
 

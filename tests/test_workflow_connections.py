@@ -12,12 +12,12 @@ Uso:
   python3 tests/test_workflow_connections.py -v   (verbose)
 """
 
+import glob
 import json
 import os
 import sys
-import glob
 
-WORKFLOWS_DIR = os.path.join(os.path.dirname(__file__), '..', 'automation', 'n8n-lab', 'workflows')
+WORKFLOWS_DIR = os.path.join(os.path.dirname(__file__), '..', 'extensions', 'n8n', 'workflows')
 
 PASS = 0
 FAIL = 0
@@ -51,9 +51,9 @@ def find_workflow_files():
 def validate_workflow(filepath):
     """Valida un archivo de workflow individual."""
     rel = os.path.relpath(filepath, os.path.join(WORKFLOWS_DIR, '..'))
-    
+
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath) as f:
             wf = json.load(f)
     except json.JSONDecodeError as e:
         test(f'{rel}: JSON malformado', False, str(e))
@@ -81,7 +81,7 @@ def validate_workflow(filepath):
         if nname in node_names:
             test(f'{rel}: nodo duplicado "{nname}"', False, f'posiciones {node_names[nname]} y {i}')
         node_names[nname] = i
-        
+
         if i == 0:
             continue  # ya testeamos arriba
         test(f'{rel}: nodo[{i}] "{nname}" tiene name', bool(nname), f'type={ntype}')
@@ -111,7 +111,7 @@ def validate_workflow(filepath):
         test(f'{rel}: conexión origen "{src}" existe como nodo',
              src in node_names,
              f'src={src}')
-        
+
         for output_name, branches in outputs.items():
             for bi, branch in enumerate(branches):
                 for conn_idx, conn in enumerate(branch):
@@ -135,7 +135,7 @@ def validate_workflow(filepath):
         eo = settings.get('executionOrder', '')
         if eo:
             test(f'{rel}: executionOrder válido', eo in ('v1', 'v2'), f'executionOrder={eo}')
-    
+
     # 6. Validar active flag
     active = wf.get('active', False)
     # No falla, solo informa

@@ -1,16 +1,22 @@
 # Changelog
 
+## Unreleased — Optional Extension Boundary
+
+### Changed
+- Moved n8n/AOC assets to `extensions/n8n/` and host/repository utilities to `extensions/operations/`; preserved legacy shell entry points as compatibility shims.
+- Made n8n ingestion alerts opt-in and separated core validation from optional n8n workflow/config checks.
+
 ## v1.4.0 — Multi-Writer Concurrency, SQLite FTS5 Engine & Defensive Security — 2026-08-29
 
 ### Added
 - **SQLite FTS5 Search Engine** (`scripts/fts_engine.py`): Incremental full-text search with SHA-256 caching and native `-bm25` ranking in WAL mode with zero external dependencies.
 - **POSIX Multi-Writer File Locking** (`scripts/vault_lock.py`, `bin/vault-lock.sh`): Advisory file locks (`fcntl.flock`) and atomic file replacement (`os.replace`) to guarantee safety under concurrent multi-agent access.
 - **Anti-Prompt-Injection & Ingest Sanitizer** (`scripts/sanitize_ingest.py`): Defensive ingestion pipeline stripping zero-width unicode tokens, defanging prompt injection overrides, and neutralizing malicious HTML tags/scripts.
-- **HMAC-SHA256 Signed Webhooks** (`bin/bunker-alert.sh`): Cryptographic payload signatures with `X-Bunker-Signature` header for secure, tamper-proof n8n alert triggering.
+- **HMAC-SHA256 Sender Signature** (`extensions/n8n/bin/bunker-alert.sh`; legacy entry point: `bin/bunker-alert.sh`): Adds an `X-Bunker-Signature` header; the reviewed receiver does not validate it, so this is not end-to-end webhook verification.
 - **Unit Testing Suite** (`make test-unit`): Added 11+ dedicated unit tests covering FTS5 indexing/search, concurrency file locking, and prompt injection sanitization.
 
 ### Hardened
-- **n8n Concurrency & Pruning**: Upgraded `N8N_CONCURRENCY_PRODUCTION_LIMIT=20`, configured `EXECUTIONS_DATA_PRUNE=true`, `EXECUTIONS_DATA_MAX_AGE=168`, and `EXECUTIONS_DATA_PRUNE_MAX_COUNT=50000` in `automation/n8n-lab/docker-compose.yml`.
+- **n8n Concurrency & Pruning**: Upgraded `N8N_CONCURRENCY_PRODUCTION_LIMIT=20`, configured `EXECUTIONS_DATA_PRUNE=true`, `EXECUTIONS_DATA_MAX_AGE=168`, and `EXECUTIONS_DATA_PRUNE_MAX_COUNT=50000` in `extensions/n8n/docker-compose.yml`.
 
 ### Fixed
 - **Canonical Author & Identity**: Unified author and repository identity to `Haiagari` across documentation, metadata, and git configuration.

@@ -1,0 +1,136 @@
+{
+  "name": "Bunker Dead Letter Queue",
+  "nodes": [
+    {
+      "id": "n8n-error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 240],
+      "parameters": {}
+    },
+    {
+      "id": "n8n-normalize-error",
+      "name": "Normalize Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [280, 240],
+      "parameters": {
+        "jsCode": "// Normalizar payload de error de cualquier workflow\nconst item = $input.first().json;\n\nconst error = {\n  // Identificadores\n  workflowId: item.workflow?.id || item.workflowId || 'unknown',\n  workflowName: item.workflow?.name || item.workflowName || 'unknown',\n  executionId: item.execution?.id || item.executionId || $execution?.id || 'unknown',\n  timestamp: new Date().toISOString(),\n\n  // Error\n  message: item.error?.message || item.message || 'Unknown error',\n  description: item.error?.description || item.description || '',\n  nodeName: item.error?.node?.name || item.nodeName || item.error?.atNode || '',\n  nodeType: item.error?.node?.type || item.nodeType || '',\n  stack: item.error?.stack || '',\n\n  // Payload\n  trigger: item.trigger || '',\n  lastNodeExecuted: item.lastNodeExecuted || '',\n  inputData: JSON.stringify(item.inputData || {}).slice(0, 2000),\n\n  // Metadata\n  env: (typeof process !== 'undefined' && process.env?.NODE_ENV) || 'unknown',\n  source: 'n8n-error-trigger'\n};\n\n// Severidad: errores de auth/permiso son CRITICAL\nerror.severity = 'WARNING';\nconst criticalPatterns = [/auth/i, /permission/i, /denied/i, /forbidden/i, /401/i, /403/i, /credential/i, /secret/i, /OOM/i, /kill/i, /timeout/i];\nfor (const p of criticalPatterns) {\n  if (p.test(error.message) || p.test(error.description)) {\n    error.severity = 'CRITICAL';\n    break;\n  }\n}\n\nreturn [{ json: error }];\n"
+      }
+    },
+    {
+      "id": "n8n-severity-check",
+      "name": "IF Critical Error",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [560, 240],
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "severity-critical",
+              "leftValue": "={{ $json.severity }}",
+              "rightValue": "CRITICAL",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n8n-dlq-store",
+      "name": "Store in DLQ",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [840, 240],
+      "parameters": {
+        "jsCode": "// Dead Letter Queue: persiste errores en staticData\nconst error = $json;\n\nfunction getStore() {\n  try { return $getWorkflowStaticData('global'); } catch (e) { return {}; }\n}\nconst store = getStore();\nstore.dlq = store.dlq || [];\n\nstore.dlq.push({\n  ...error,\n  storedAt: new Date().toISOString(),\n  acknowledged: false\n});\n\n// Mantener solo los ultimos 200 errores\nif (store.dlq.length > 200) {\n  store.dlq = store.dlq.slice(-200);\n}\n\nreturn [{ json: { ok: true, dlqSize: store.dlq.length, severity: error.severity, workflowName: error.workflowName } }];\n"
+      }
+    },
+    {
+      "id": "n8n-notify-output",
+      "name": "Notify (placeholder)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [840, 420],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Error": {
+      "main": [
+        [
+          {
+            "node": "IF Critical Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Critical Error": {
+      "main": [
+        [
+          {
+            "node": "Notify (placeholder)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Store in DLQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify (placeholder)": {
+      "main": [
+        [
+          {
+            "node": "Store in DLQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "staticData": null,
+  "tags": ["bunker", "core", "observability"],
+  "active": false,
+  "versionId": "dlq-v1",
+  "meta": {
+    "description": "Error Trigger + Dead Letter Queue. Atrapa errores de todos los workflows, clasifica severidad, almacena en staticData para revisión."
+  }
+}

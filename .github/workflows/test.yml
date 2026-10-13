@@ -32,29 +32,20 @@ jobs:
         with:
           go-version: '1.22'
 
-      - name: Verificar sintaxis bash
+      - name: Verificar sintaxis bash (core + extensions)
         run: |
-          for f in bin/*.sh; do
-            bash -n "$f" && echo "  ✅ $f" || exit 1
-          done
+          find bin extensions -type f -name '*.sh' -print0 |
+            xargs -0 -r -n1 bash -n
 
-      - name: Validar workflows n8n
-        run: python3 tests/test_workflow_connections.py
-
-      - name: Validar scripts
+      - name: Validar scripts (core + extensions)
         run: bash tests/test_scripts.sh
+
+      - name: Core and optional extension checks
+        run: make test
 
       - name: Verificar archivos esenciales del vault
         run: |
-          for f in wiki/hot.md wiki/index.md wiki/log.md PROJECT.md AGENTS.md BUNKER_RULES.md; do
+          for f in wiki/hot.md wiki/index.md wiki/log.md PROJECT.md AGENTS.md \
+                   BUNKER_RULES.md; do
             [ -f "$f" ] && echo "  ✅ $f" || { echo "  ❌ $f missing"; exit 1; }
           done
-
-      - name: Validar JSON del docker-compose
-        run: python3 -c "import yaml; yaml.safe_load(open('automation/n8n-lab/docker-compose.yml')); print('  ✅ docker-compose.yml válido')"
-
-      - name: Build BM25 index
-        run: python3 scripts/bm25-index.py build
-
-      - name: Verificar retrieve BM25
-        run: python3 scripts/retrieve.py "test query" --top 2

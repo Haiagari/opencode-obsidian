@@ -1,0 +1,71 @@
+{
+  "name": "Bunker Health Check",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "e1f2g3h4-5678-9012-3456-789012345678",
+      "name": "When clicking \"Test Workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "ok"
+            },
+            {
+              "name": "system",
+              "value": "Bunker OS n8n Orchestrator"
+            }
+          ],
+          "number": [
+            {
+              "name": "timestamp",
+              "value": "={{ $now.toMillis() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-5678-9012-3456-789012345678",
+      "name": "Set Status",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        450,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking \"Test Workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Set Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f781a7db-ab14-41d3-96b5-0c7f20835fdb",
+  "id": "1k3a2LpP",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

@@ -401,7 +401,7 @@ Do not silently overwrite claims. Flag and let the user decide.
 
 ## 11 — n8n Operations
 
-See `automation/n8n-lab/` for workflow files.
+See `extensions/n8n/` for optional workflow files. Core wiki workflows do not require Docker or n8n.
 
 ### Available workflows
 

@@ -1,0 +1,48 @@
+{
+  "name": "Bunker Ultimate Alerter",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bunker-security-alert",
+        "options": {}
+      },
+      "id": "webhook-01",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300],
+      "webhookId": "bunker-security-alert"
+    },
+    {
+      "parameters": {
+        "chatId": "8022171994",
+        "text": "=\n🚨 *BUNKER ALERT* 🚨\n\n*Target:* {{ $json.body.target }}\n*Level:* {{ $json.body.level }}\n*Message:* {{ $json.body.message }}\n\n_24/7 Monitoring Active_",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-01",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [500, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "3.0"
+}

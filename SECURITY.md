@@ -15,7 +15,7 @@ Vulnerabilities will be addressed within 48 business hours.
 This policy covers:
 - OpenCode skills in `skills/`
 - Scripts in `bin/` and `scripts/`
-- n8n workflows in `automation/n8n-lab/`
+- Optional n8n workflows in `extensions/n8n/`
 - Hooks in `hooks/hooks.json`
 - Tests in `tests/`
 
@@ -23,7 +23,7 @@ This policy covers:
 
 ### Secrets
 - No hardcoded API keys in scripts (verified by `make test-scripts`)
-- Keys live in `.env` (gitignored) or in n8n credential vault
+- Optional extension keys live in `extensions/n8n/.env` (gitignored) or in n8n credential vault
 - Test suite scans for secret patterns on every run
 
 ### n8n
@@ -61,6 +61,6 @@ make test-scripts
 # Verify vault integrity
 ./bin/bunker-check.sh
 
-# Verify n8n is not exposed (should only show 127.0.0.1:5678)
+# Optional n8n listener check (only relevant when the extension is running)
 ss -tlnp 2>/dev/null | grep 5678 | grep -v 0.0.0.0 || netstat -tlnp 2>/dev/null | grep 5678 | grep -v 0.0.0.0
 ```

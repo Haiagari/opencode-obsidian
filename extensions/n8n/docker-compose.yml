@@ -1,0 +1,42 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n_meco_lab
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/data/workflows
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2048M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=America/Lima
+      # --- PRODUCTION CONCURRENCY & PRUNING TUNING ---
+      - N8N_CONCURRENCY_PRODUCTION_LIMIT=20
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=168
+      - EXECUTIONS_DATA_PRUNE_MAX_COUNT=50000
+      - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
+      - N8N_METRICS=true
+      - N8N_LOG_FORMAT=json
+      - N8N_LOG_LEVEL=info
+      # --- ACTIVACIÓN DE IA Y SEGURIDAD ---
+      - N8N_AI_ASSISTANT_ENABLED=true
+      - N8N_BLOCK_XML_EXTERNAL_ENTITY=true
+      - N8N_DIAGNOSTICS_ENABLED=false
+    env_file:
+      - .env
+volumes:
+  n8n_data:

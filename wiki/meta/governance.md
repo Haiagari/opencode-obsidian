@@ -35,12 +35,13 @@ Use `wiki/meta/ADR-TEMPLATE.md`.
 
 Scripts that may commit, push, create PRs, call webhooks, or archive user notes must default to dry-run.
 
-Approved external-effect commands require explicit `--apply`:
+Other external-effect operations require explicit `--apply`:
 
 - `bin/wiki-sync.sh --apply`
 - `bin/bunker-push.sh --apply`
-- `bin/bunker-alert.sh --apply`
 - `bin/bunker-pulse.sh --apply`
+
+Alert sending is a direct-send exception, not an `--apply`-gated operation. Invoke `./bin/bunker-alert.sh "target" "LEVEL" "message"`; it requires a strong local `AOC_WEBHOOK_SECRET`. Keep the n8n receiver workflow inactive until its Webhook node is configured with Header Auth.
 
 ## Evidence Rules
 
