@@ -17,7 +17,7 @@ scripts/        → SQLite FTS5 & BM25 retrieval, indexing, locking, sanitizatio
 hooks/          → OpenCode hooks
 ```
 
-The `wiki/` baseline (core index, hot cache, evergreen concepts, entities, and skills) is tracked in git. Private and volatile folders such as `wiki/projects/`, `wiki/meta/handovers/`, `wiki/decisions/`, `wiki/blueprints/`, and `wiki/sources/` (as well as `wiki/.raw/`, `wiki/questions/`, `wiki/canvases/`, and `wiki/meta/archive/`) are gitignored so sensitive and personal content stays local.
+The `wiki/` baseline (core index, hot cache, evergreen concepts, entities, and skills) is tracked in git. Private and volatile content such as `wiki/projects/`, `wiki/meta/handovers/`, `wiki/decisions/`, `wiki/blueprints/`, `wiki/sources/`, `wiki/.raw/`, `wiki/questions/`, `wiki/canvases/`, and `wiki/meta/archive/` is ignored for new files by `.gitignore`. Some files under `wiki/sources/` and `.raw/` are already tracked, so their contents are public in repository history and edits to tracked files remain visible. Check `git ls-files wiki/sources .raw wiki/.raw` before adding private material; do not assume `.gitignore` makes tracked files private.
 
 ## Proactive Protocol
 

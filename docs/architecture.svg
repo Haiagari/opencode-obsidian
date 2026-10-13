@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 300" role="img" aria-labelledby="title desc">
+  <title id="title">Bunker OS local knowledge workflow</title>
+  <desc id="desc">Local input passes through sanitization and ingestion into the Obsidian wiki, where it can be retrieved with SQLite FTS5 and BM25. OpenCode skills orchestrate these steps. Optional n8n is separate.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7c3aed"/></marker>
+    <style>
+      text{font-family:Inter,ui-sans-serif,system-ui,sans-serif;fill:#e5e7eb}
+      .box{fill:#171923;stroke:#8b5cf6;stroke-width:2;rx:16}
+      .sub{font-size:14px;fill:#c4b5fd}
+      .label{font-size:20px;font-weight:700}
+      .arrow{stroke:#8b5cf6;stroke-width:3;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1080" height="300" rx="24" fill="#0b0c12"/>
+  <text x="48" y="48" class="label">Local-first knowledge workflow</text>
+  <rect x="48" y="90" width="175" height="112" class="box"/>
+  <text x="135" y="135" text-anchor="middle" class="label">Local input</text><text x="135" y="163" text-anchor="middle" class="sub">files · notes · sources</text>
+  <path d="M230 146H278" class="arrow"/>
+  <rect x="288" y="90" width="185" height="112" class="box"/>
+  <text x="380" y="135" text-anchor="middle" class="label">Sanitize</text><text x="380" y="163" text-anchor="middle" class="sub">untrusted content</text>
+  <path d="M480 146H528" class="arrow"/>
+  <rect x="538" y="90" width="185" height="112" class="box"/>
+  <text x="630" y="135" text-anchor="middle" class="label">Ingest</text><text x="630" y="163" text-anchor="middle" class="sub">OpenCode skills</text>
+  <path d="M730 146H778" class="arrow"/>
+  <rect x="788" y="90" width="244" height="112" class="box"/>
+  <text x="910" y="135" text-anchor="middle" class="label">Obsidian wiki</text><text x="910" y="163" text-anchor="middle" class="sub">Markdown source of truth</text>
+  <text x="540" y="252" text-anchor="middle" class="sub">SQLite FTS5 + BM25 retrieval · optional n8n automation is separate</text>
+</svg>

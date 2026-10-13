@@ -65,7 +65,7 @@ Bunker OS is for personal daily use: a practical way to turn sources, research, 
 | Dead Letter Queue | Global error handler | ❌ | ❌ |
 | Evidence vault | SHA256 checksums | ❌ | ❌ |
 | Multi-channel alerts | Optional n8n workflows; sender signs alerts | ❌ | ❌ |
-| Health monitoring | Active n8n workflow | ❌ | ❌ |
+| Health monitoring | Manual smoke workflow only; no service monitoring | ❌ | ❌ |
 | Security & Guardrails | Ingestion sanitizer; alert signature is not validated by the reviewed alerter | ❌ | ❌ |
 | Multi-methodology | ❌ (generic only) | LYT / PARA / Zettelkasten | ❌ |
 | Multi-writer safe | ✅ (POSIX `fcntl.flock` + atomic rename) | Per-file locks | ❌ |
@@ -83,7 +83,7 @@ Bunker OS is for personal daily use: a practical way to turn sources, research, 
 
 - **Persistent wiki** — 200+ pages of concepts, entities, sources, blueprints, and projects
 - **Autoresearch** — 3-round autonomous web research: decomposes topics, searches, cross-references sources, and files everything into the wiki
-- **SQLite FTS5 + BM25 search** — fast keyword and full-text search with incremental SHA-256 caching (`.vault-meta/fts5_index.db`), pure Python stdlib, zero external dependencies
+- **SQLite FTS5 + BM25 search** — fast keyword and full-text search with incremental SHA-256 caching (`.vault-meta/fts5/vault_fts.db`), pure Python stdlib, zero external dependencies
 - **`/think`** — 10-principle decision framework for architectural decisions and audits
 - **Wiki-ingest** — source ingestion with automatic entity and concept extraction
 - **Wiki-lint** — health check across 8 categories (orphans, dead links, missing frontmatter)
@@ -94,7 +94,7 @@ Automation is an extension, not a prerequisite for the personal knowledge workfl
 
 - **AOC v4** — documented pipeline concept using webhook, AI triage, GitHub, and notifications; not presented as a core knowledge capability
 - **Dead Letter Queue** — workflow for collecting errors when enabled
-- **Health Check** — n8n workflow for periodic status checks
+- **Health Check** — manual smoke workflow that returns a static status; it does not monitor services or run periodically
 - **Ultimate Alerter** — multi-channel alerts; the sender generates HMAC-SHA256 signatures, but the reviewed alerter does not validate them
 - **Emergency Reprocessor** — auto-retry of failed events every 5 min
 
@@ -285,27 +285,14 @@ n8n is an optional extension for asynchronous workflows; the vault and local kno
 
 | Workflow | Nodes | Status | Description |
 |---|:---:|---|---|
-| Health Check | 2 | 🟢 Active | System health check every 5 min |
-| Ultimate Alerter | 2 | 🟢 Active | Multi-channel webhook alert; sender signature is not validated by the reviewed alerter |
-| Dead Letter Queue | 5 | ⚪ Inactive | Error trigger: captures all workflow errors |
-| AOC v4 Enterprise | 37 | ⚪ Inactive | Pipeline: webhook → AI triage → GitHub → ... |
+| Health Check | 2 | 🟢 Active | Manual trigger; returns static status, no periodic monitoring |
+| Ultimate Alerter | 2 | ⚪ Inactive | Multi-channel webhook; receiver does not validate sender signatures |
+| Dead Letter Queue | 5 | ⚪ Inactive | Error trigger: captures workflow errors when configured |
+| AOC v4 Enterprise | 37 | ⚪ Inactive | Experimental prototype; no receiver authentication or source rate limiting |
 
 ### AOC v4 Enterprise Pipeline
 
-**Flow steps:**
-
-1. **Ingress** — Webhook received → Ingress Guard validates → Check for replay via Redis
-2. **Decision** — If replay detected: return cached response
-3. **Triage** — If new: send to AI Triage (OpenRouter) for classification
-4. **Routing** — Parse AI decision:
-   - Create issue? → GitHub API
-   - Review needed? → HITL queue
-   - Emergency? → Emergency queue
-   - Duplicate? → Skip
-5. **Notifications** — Build notification message → Send via Slack, Telegram, Discord (parallel)
-6. **Audit** — Write audit log → Return final status
-
-**Diagram simplified (26 nodes represented) — workflow real tiene 37 nodos, ver `extensions/n8n/workflows/bunker-aoc-v4-enterprise.json` para el flujo completo con todos los pasos de validación y logging por canal.**
+The workflow export contains prototype nodes for webhook intake, triage, routing, and notifications. Its inactive state is intentional: the asset has no receiver authentication or source-based rate limiting, and static JSON validation does not establish that external services are configured or operational. Do not activate or expose it until the missing controls are implemented and tested.
 
 ### Dead Letter Queue
 
@@ -340,25 +327,9 @@ Environment: PostgreSQL recommended, queue mode with Redis for horizontal scalin
 
 ### Vault flow
 
-```
-.raw/ (untrusted source documents)
-  ↓
-sanitize_ingest.py (prompt injection / hidden tag neutralization)
-  ↓
-wiki-ingest (OpenCode skill with atomic vault locking)
-  ↓ (extracts entities, concepts, sources)
-wiki/ (persistent knowledge)
-  ├── hot.md (recent context ~500 words)
-  ├── index.md (master catalog)
-  ├── log.md (append-only operation log via vault_lock.py)
-  ├── sources/ (external source summaries)
-  ├── entities/ (people, orgs, products)
-  ├── concepts/ (ideas, patterns, frameworks)
-  ├── meta/ (dashboards, handovers, evidence)
-  └── ... (comparisons, questions, projects)
-```
+![Bunker OS local knowledge workflow](docs/architecture.svg)
 
-`wiki-ingest` extracts entities, concepts, and sources, then creates/updates pages and cross-references.
+New raw inputs and source notes are ignored by Git by default. Previously tracked source files remain public in the repository history; see [AGENTS.md](AGENTS.md#vault) before placing private content in the vault.
 
 ### Async automation & Security
 
@@ -367,7 +338,7 @@ OpenCode (skills) / Local CLI
   ├→ bin/bunker-alert.sh (generates HMAC-SHA256 header; receiver validation is not implemented in reviewed alerter)
   └→ n8n Docker (localhost:5678)
        ├→ Webhooks → AOC pipeline → GitHub Issues
-       ├→ Schedule → Health Check (5 min)
+       ├→ Manual run → Health Check (static status only)
        ├→ Schedule → Emergency Reprocessor (5 min)
        └→ Error Trigger → Dead Letter Queue
             ↓
@@ -550,7 +521,7 @@ The vault is a plain folder of files. Use Obsidian Sync, Syncthing, iCloud, Drop
 <details>
 <summary><b>How do I add a source to the wiki?</b></summary><br>
 
-Drop the file in `.raw/` and say `ingest [filename]`. The skill extracts entities and concepts, creates pages, and updates indexes.
+Drop the file in `.raw/` and say `ingest [filename]`. New files in `.raw/` and `wiki/sources/` are ignored by Git, but a few files in those folders are already tracked in public history. Check `git ls-files .raw wiki/sources` before putting private material there.
 
 </details>
 
@@ -562,15 +533,9 @@ A global workflow that catches errors from any other n8n workflow. Classifies se
 </details>
 
 <details>
-<summary><b>How do I activate the AOC v4 Enterprise?</b></summary><br>
+<summary><b>Can I activate the AOC v4 Enterprise?</b></summary><br>
 
-Requires: OpenRouter API key, Discord webhook URL, and GitHub credentials in n8n.
-
-**Steps:**
-1. Set `OPENROUTER_API_KEY`, `DISCORD_WEBHOOK_URL`, `GITHUB_PAT` in `extensions/n8n/.env`
-2. In n8n UI (http://localhost:5678), import the AOC v4 Enterprise JSON workflow
-3. Toggle the workflow to "Active"
-4. Check the Health Check dashboard to verify all channels are reachable
+Not safely in its current state. The workflow is an inactive prototype and does not authenticate webhook callers or limit request rates. Keep it inactive and do not expose it to a network until those controls are implemented and tested.
 
 </details>
 

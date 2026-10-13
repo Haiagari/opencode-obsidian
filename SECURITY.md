@@ -2,13 +2,7 @@
 
 ## Reporting Vulnerabilities
 
-If you find a security vulnerability, **do not open a public issue**.
-
-Contact directly:
-- GitHub: [Haiagari](https://github.com/Haiagari)
-- Repo: [opencode-obsidian](https://github.com/Haiagari/opencode-obsidian)
-
-Vulnerabilities will be addressed within 48 business hours.
+If you find a security vulnerability, **do not open a public issue**. Contact [Haiagari on GitHub](https://github.com/Haiagari) privately.
 
 ## Scope
 
@@ -19,48 +13,36 @@ This policy covers:
 - Hooks in `hooks/hooks.json`
 - Tests in `tests/`
 
-## Existing Security Measures
+## What the current checks cover
 
-### Secrets
-- No hardcoded API keys in scripts (verified by `make test-scripts`)
-- Optional extension keys live in `extensions/n8n/.env` (gitignored) or in n8n credential vault
-- Test suite scans for secret patterns on every run
+- `make test-scripts` checks shell scripts in the configured `bin/` and `extensions/` paths against a limited set of secret patterns. It is not a whole-repository secret scanner and cannot guarantee that credentials are absent.
+- `make test` validates the Python tests, workflow JSON connections, and configured YAML files.
+- The n8n Compose service binds to host loopback by default. Review the Compose file and local environment before changing its exposure.
 
-### n8n
-- AOC v4 webhook supports `x-aoc-secret` header
-- Rate limiting by source implemented in the pipeline
-- Secret redaction in logs and payloads
-- Dry-run mode by default (`AOC_DRY_RUN=true`)
+## n8n workflow status and limitations
 
-### Network
-- Ingest server binds to `127.0.0.1:9090` by default
-- n8n exposes only on localhost
-- Autoresearch validates and sanitizes URLs before fetch
-- Content sanitization: prevents wikilink injection and scripts in external sources
-
-### Dependencies
-- n8n container with version pinning
-- Secret scanning in test suite
-- npm audit as recommended practice
+- **Bunker AOC v4 Enterprise is inactive and experimental.** Its webhook workflow does not implement receiver authentication or source-based rate limiting. Do not activate it or expose it to a network until those controls are implemented and tested.
+- **Bunker Ultimate Alerter is inactive.** The alert sender can sign requests with HMAC, but the reviewed receiver does not validate that signature. Sender-side signing alone does not authenticate a webhook.
+- **Bunker Health Check is a manual smoke workflow.** It returns a static status value; it does not monitor services or run on a schedule.
+- Do not expose n8n publicly. A reverse proxy alone does not replace authentication, request validation, or rate limiting.
 
 ## Best Practices
 
-1. **Never commit** `.env`, API keys, tokens, or credentials
-2. **Use environment variables** for sensitive configuration
-3. **Run `make test`** before pushing (includes secret scanning)
-4. **Keep n8n updated** (regular docker pull)
-5. **Do not expose n8n to the internet** without a reverse proxy with SSL
-6. **Configure `x-aoc-secret`** before activating the AOC v4
+1. Never commit `.env` files, API keys, tokens, or credentials.
+2. Use environment variables or n8n's credential store for secrets.
+3. Run `make test` before pushing. Its script checks are limited and are not a substitute for a dedicated secret scanner.
+4. Keep the n8n image pin deliberate and review release notes before upgrading.
+5. Keep experimental webhook workflows inactive until their authentication and abuse controls are in place.
 
 ## Secure Defaults
 
 ```bash
-# Verify no secrets in repo
+# Run the configured script checks
 make test-scripts
 
 # Verify vault integrity
 ./bin/bunker-check.sh
 
-# Optional n8n listener check (only relevant when the extension is running)
-ss -tlnp 2>/dev/null | grep 5678 | grep -v 0.0.0.0 || netstat -tlnp 2>/dev/null | grep 5678 | grep -v 0.0.0.0
+# Inspect any local listener on the default n8n port
+ss -tlnp 2>/dev/null | grep 5678
 ```

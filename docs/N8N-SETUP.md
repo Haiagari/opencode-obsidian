@@ -9,7 +9,7 @@ The Compose service binds only to host loopback (`127.0.0.1:5678`), matching thi
 1. Install Docker Engine and the Docker Compose plugin.
 2. From the repository root, copy `extensions/n8n/.env.example` to `extensions/n8n/.env`, configure it locally, and set restrictive permissions (`chmod 600 extensions/n8n/.env`). Never commit or print `.env` contents.
 3. Start the optional service from the extension directory with `./setup.sh` (or `docker compose up -d`).
-4. Open `http://localhost:5678` and import workflows from `extensions/n8n/workflows/` as needed. Keep `Bunker Ultimate Alerter` inactive. Before activating it, configure receiver authentication directly on its Webhook node: use Header Auth bound to a strong, unique local secret. The workflow does not validate the sender's HMAC header, so sender-side signing is not receiver authentication.
+4. Open `http://localhost:5678` and import workflows from `extensions/n8n/workflows/` as needed. Keep `Bunker Ultimate Alerter` and `Bunker AOC v4 Enterprise` inactive. The alerter does not validate the sender's HMAC header, and AOC v4 does not implement receiver authentication or source-based rate limiting. Do not activate or expose either webhook workflow until the missing controls are implemented and tested. The Health Check workflow is a manual smoke test that returns static status; it is not a monitor.
 5. Set `AOC_WEBHOOK_SECRET` to a strong, unique local secret before using the alert sender; it fails closed when unset.
 6. To send alerts from ingestion, explicitly opt in with `BUNKER_N8N_ALERTS=1`. Normal ingestion does not contact n8n.
 

@@ -39,10 +39,10 @@ test-scripts:
 	@echo ""
 
 test-yaml:
-	@python3 -c "import yaml; yaml.safe_load(open('.github/workflows/test.yml')); print('  ✅ CI YAML valid')" 2>/dev/null || echo "  ⚠️  yaml no disponible (pip install pyyaml)"
+	@python3 -c "import yaml; yaml.safe_load(open('.github/workflows/test.yml')); print('  ✅ CI YAML valid')"
 
 test-yaml-extensions:
-	@python3 -c "import yaml; yaml.safe_load(open('extensions/n8n/docker-compose.yml')); print('  ✅ n8n compose YAML valid')" 2>/dev/null || echo "  ⚠️  yaml no disponible"
+	@python3 -c "import yaml; yaml.safe_load(open('extensions/n8n/docker-compose.yml')); print('  ✅ n8n compose YAML valid')"
 
 test-retrieve:
 	@echo "========================================"

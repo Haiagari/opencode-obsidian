@@ -30,17 +30,6 @@
         ]
       }
     ],
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "[ -d .git ] || exit 0; git add -- skills/ scripts/ tests/ Makefile hooks/hooks.json 2>/dev/null; (git diff --cached --quiet || git commit -m \"chore: auto-commit $(date '+%Y-%m-%d %H:%M')\" 2>/dev/null) || true"
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "matcher": "",

@@ -138,6 +138,19 @@ def validate_workflow(filepath):
 
     # 6. Validar active flag
     active = wf.get('active', False)
+    if name == 'Bunker AOC v4 Enterprise':
+        test(f'{rel}: AOC experimental permanece inactivo', active is False,
+             'no habilitar antes de implementar y probar autenticación y rate limiting')
+
+    if name == 'Bunker Health Check':
+        node_types = [node.get('type', '') for node in nodes]
+        test(f'{rel}: health check usa disparo manual',
+             'n8n-nodes-base.manualTrigger' in node_types,
+             f'tipos={node_types}')
+        test(f'{rel}: health check no simula monitoreo programado',
+             'n8n-nodes-base.scheduleTrigger' not in node_types,
+             f'tipos={node_types}')
+
     # No falla, solo informa
     if '-v' in sys.argv:
         status = '🟢 ACTIVO' if active else '⚪ inactivo'

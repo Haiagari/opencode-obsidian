@@ -92,6 +92,24 @@ Defensive sanitization strips prompt injections and adversarial directives.
         self.assertTrue(len(results) > 0)
         self.assertIn("architecture.md", results[0]['path'])
 
+    def test_content_change_with_preserved_mtime_is_reindexed(self):
+        fts_engine.build_or_update_index(vault_dir=self.test_dir, force=True)
+        original_stat = os.stat(self.note1)
+
+        with open(self.note1, 'w', encoding='utf-8') as f:
+            f.write("# Preserved timestamp regression\n\nKuroIndexSentinelUniqueTerm\n")
+        os.utime(self.note1, ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns))
+
+        result = fts_engine.build_or_update_index(vault_dir=self.test_dir, force=False)
+        self.assertEqual(result['indexed_or_updated'], 1)
+        self.assertEqual(result['skipped'], 1)
+
+        results = fts_engine.query_fts(
+            "KuroIndexSentinelUniqueTerm", top_k=5, vault_dir=self.test_dir
+        )
+        self.assertTrue(results)
+        self.assertIn("architecture.md", results[0]['path'])
+
     def test_status(self):
         fts_engine.build_or_update_index(vault_dir=self.test_dir, force=True)
         status = fts_engine.get_status(vault_dir=self.test_dir)

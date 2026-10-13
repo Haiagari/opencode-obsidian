@@ -111,3 +111,7 @@ wiki/meta/evidence-*
 wiki/meta/INTEGRITY-*
 wiki/meta/ingestion-log.md
 wiki/*.canvas
+
+# Raw inputs and newly captured source pages stay local by default
+/.raw/
+wiki/sources/
