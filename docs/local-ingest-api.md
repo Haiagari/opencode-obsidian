@@ -2,9 +2,7 @@
 
 `bin/ingest_server.go` is an optional loopback HTTP endpoint for placing short notes in `wiki/inbox/`. It is separate from the n8n extension. It does not create wiki concepts, update `wiki/index.md`, or publish changes; an agent or a person must review and file the inbox note.
 
-![Ingestion paths: reviewed source workflow and local API inbox capture](diagrams/ingestion-illustration.png)
-
-The API route ends at the inbox; it does not bypass review or file notes into the knowledge base automatically.
+The API route ends at the inbox; it does not bypass review or file notes into the knowledge base automatically. See the [knowledge workflow illustration](diagrams/knowledge-workflow.png) and [architecture guide](architecture.md) for how this capture path relates to the vault.
 
 ## Start it
 

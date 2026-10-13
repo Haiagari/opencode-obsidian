@@ -12,7 +12,7 @@
 | Review privacy exposure | Enumerated tracked `.raw/` and `wiki/sources/` content; scanned reachable text blobs in this branch's Git history for high-signal credential formats; removed two plugin `data.json` files from the current Git tree and strengthened ignore rules. |
 | Decide n8n scope | Keep n8n optional. Keep the AOC and alert webhook workflows inactive. CI now rejects an active workflow containing a webhook trigger. The manual Health Check remains active and returns static status only. |
 | Add end-to-end tests | Added a local-only lifecycle test covering sanitized capture, atomic wiki writes, retrieval indexing, archiving, commit, and push to a temporary bare Git remote. Added HTTP-handler tests without opening a network listener. Added mocked operation tests for dry-run and archive-branch behavior. |
-| Align guides with behavior | Updated README, PROJECT, AGENTS, SECURITY, installation and operations guides, security boundaries, and this report. Added a dedicated local API guide and four coordinated, generated raster illustrations for architecture, ingestion, retrieval, and trust boundaries. Corrected sanitizer claims and documented the remaining limits. |
+| Align guides with behavior | Updated README, PROJECT, AGENTS, SECURITY, installation and operations guides, security boundaries, and this report. Added a dedicated local API guide and organized documentation into a task-based hub. Replaced four repetitive illustrations with two coordinated, generated visual assets; exact flows are documented in text and Mermaid. Corrected sanitizer claims and documented the remaining limits. |
 
 ## Findings fixed
 
@@ -42,7 +42,7 @@ The integrity scanner reports 32 unresolved wikilinks, 46 orphan notes, 28 notes
 - `make test`: 197 checks passed at the audit checkpoint (unit, script, HTTP, lifecycle, retrieval, wiki, n8n JSON, and YAML checks).
 - `./bin/bunker-check.sh`: passed on this checkout, including evidence generation and the privacy path check.
 - `git diff --check`, Bash syntax, Go vet, and Go HTTP tests passed.
-- Architecture, ingestion, retrieval, and trust-boundary illustrations were reviewed at full size and embedded in the relevant guides.
+- The two revised illustrations were reviewed at full size; filenames and links were checked against the documentation hub and architecture/usage guides.
 - Lifecycle publishing used a temporary local bare Git remote. No GitHub issue/PR, n8n service, or external webhook was contacted by the tests.
 
 ## Remaining boundaries

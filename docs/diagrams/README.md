@@ -1,12 +1,10 @@
-# Documentación visual
+# Visual assets
 
-Cuatro ilustraciones raster coordinadas muestran el producto sin sustituir las guías textuales. Se reutilizan en el README y en las páginas que explican cada flujo.
+The documentation uses two generated editorial illustrations. They help readers build a mental model; the precise behavior is defined in the linked guides and Mermaid flow below.
 
-| Ilustración | Qué explica | Se usa en |
+| Illustration | Purpose | Reference |
 |---|---|---|
-| [Arquitectura general](architecture-overview.png) | OpenCode, skills/scripts, vault Markdown, FTS5/BM25, API local e integración n8n separada | [README](../../README.md#architecture), [arquitectura](../../wiki/concepts/opencode-obsidian-architecture.md) |
-| [Ingesta](ingestion-illustration.png) | Diferencia entre el flujo de wiki-ingest y la captura de API al inbox | [API local](../local-ingest-api.md), [flujo del vault](../../wiki/concepts/vault-flow.md) |
-| [Consulta](retrieval-illustration.png) | Markdown como fuente de verdad, construcción del índice local y síntesis de resultados | [README](../../README.md#bm25--sqlite-fts5-text-retrieval) |
-| [Límites de confianza](trust-boundaries-illustration.png) | Fuente no confiable, límites del sanitizer, revisión humana, API local y webhooks inactivos | [Security boundaries](../security-boundaries.md) |
+| [System map](system-map.png) | Shows the vault as the center of the local workflow and keeps optional automation visually separate | [Architecture](../architecture.md) |
+| [Knowledge workflow](knowledge-workflow.png) | Shows source review, local inbox capture, filing, and retrieval at a glance | [Using Bunker OS](../usage-guide.md) |
 
-Las imágenes son explicativas. Los límites y el comportamiento detallado se documentan en las guías vinculadas; la ilustración no reemplaza esos contratos.
+The illustrations contain no embedded labels so they remain readable at different sizes. Use the documentation text and architecture flow for exact component names and behavior.
