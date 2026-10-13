@@ -37,6 +37,7 @@ The user selected personal daily use as the primary audience, rejected a documen
 - [x] T10 — Default the unauthenticated Telegram alert webhook to inactive and document/test the activation guard.
 - [x] T11 — Correct dashboard and governance guidance for direct alert sends and receiver security preconditions.
 - [x] T12 — Replace the orphan gitlink with normal extension files, preserve ignored `.env`, review/stage only intended changes, and create the user-authorized commit.
+- [x] T13 — Harden the optional local n8n Compose service: loopback-only publishing, read-only workflow mount, and explicit stable image pin (`2.43.4`).
 
 ## Acceptance Criteria
 - README identifies the primary user, problem, and core loop immediately.
@@ -58,6 +59,7 @@ The user selected personal daily use as the primary audience, rejected a documen
 
 ## Progress
 - T1–T12 completed. The dashboard and governance docs now reflect the current direct-send alert interface and its security preconditions. Native review found the imported Telegram alert webhook active without receiver authentication; the bounded correction disabled it by default, required an explicit strong secret in the sender, documented Header Auth before activation, and added regression coverage.
+- T13 completed: n8n binds only to host loopback, workflow assets mount read-only, and the writable persistent data volume remains intact. The image is deliberately pinned to `2.43.4`; `.env.example` remains unread and unchanged after its path was blocked.
 - The old path was indexed as a gitlink (`160000`, commit `658e1da`) with no `.gitmodules` or recoverable module URL. The user chose to make the moved n8n extension a normal repo-owned directory rather than restore a submodule.
 - Compatibility shims remain under existing `bin/` and root script paths; n8n notifications are opt-in (`BUNKER_N8N_ALERTS=1`) and cannot change ingestion or push outcomes.
 
@@ -65,9 +67,10 @@ The user selected personal daily use as the primary audience, rejected a documen
 - Independent verifier: `make test` passed (186 tests overall, including workflow, scripts, integrity, and unit checks); `python3 tests/test_core_optional_extensions.py` passed (5 tests); `git diff --check` passed.
 - `extensions/n8n/.env` present and ignored by `extensions/n8n/.gitignore`; no secret contents were read.
 - Parent re-ran `git diff --check`; passed.
+- T13: `python3 tests/test_core_optional_extensions.py` — 7 tests passed; `make test` — 186 tests passed, including YAML validation. No Docker service was started.
 - Static review found no active old-path references except historical integrity reports. No Docker or live integrations were exercised.
 - Native risk assess was unavailable (`empty output`) and failed closed to high; the required independent verification completed. Native review found CRITICAL `R1-001` on the active unauthenticated webhook. The 40-diff-line correction was applied; targeted validation approved the corrected candidate. Non-blocking warnings `R3-001` and `R4-001` remain informational follow-ups.
 - Exact native acknowledgement completed for final staged lineage `review-27df857af6346be6`; authority was burned. Commit `a29d953` was created locally; review does not authorize delivery or push.
 
 ## Next Step
-No further task work is pending. The commit is local; push remains a separate user decision.
+T13 hardening and tests are complete; native review approved the candidate. Changes remain uncommitted; no Docker or push was performed. The earlier advisory receipt preserved locations (`docker-compose.yml:8-9`) but not claims, so exact disposition of those original warnings cannot be asserted from that receipt.

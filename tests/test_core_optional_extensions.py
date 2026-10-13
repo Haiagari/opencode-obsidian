@@ -59,6 +59,15 @@ class OptionalExtensionBoundaryTests(unittest.TestCase):
         self.assertTrue((ROOT / "extensions/n8n/workflows").is_dir())
         self.assertTrue((ROOT / "extensions/n8n/bin/check-n8n.sh").is_file())
 
+    def test_n8n_compose_uses_safe_local_defaults(self):
+        compose = (ROOT / "extensions/n8n/docker-compose.yml").read_text()
+        self.assertIn('"127.0.0.1:5678:5678"', compose)
+        self.assertIn("docker.n8n.io/n8nio/n8n:2.43.4", compose)
+        self.assertNotIn(":latest", compose)
+        self.assertIn("./workflows:/data/workflows:ro", compose)
+        self.assertIn("n8n_data:/home/node/.n8n", compose)
+        self.assertNotIn("n8n_data:/home/node/.n8n:ro", compose)
+
 
 if __name__ == "__main__":
     unittest.main()

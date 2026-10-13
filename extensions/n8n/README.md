@@ -2,6 +2,10 @@
 
 This directory contains the optional n8n/AOC automation extension. The core vault, ingestion, retrieval, integrity checks, and `make test-core` do not require Docker or this extension's local configuration.
 
+## Safe local defaults
+
+The Compose service publishes n8n only on host loopback (`127.0.0.1:5678`); it is not exposed on external interfaces. The image is deliberately pinned to `2.43.4`; update that version deliberately in `docker-compose.yml` when upgrading. Host workflow assets are mounted read-only at `/data/workflows`, while the persistent `n8n_data` volume remains writable for n8n state.
+
 ## Setup
 
 1. Install Docker Engine and the Docker Compose plugin.

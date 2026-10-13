@@ -2,6 +2,8 @@
 
 n8n/AOC automation is optional and is not required for local capture, sanitization, retrieval, or vault integrity. The extension lives in `extensions/n8n/`.
 
+The Compose service binds only to host loopback (`127.0.0.1:5678`), matching this local n8n setup. Its image is deliberately pinned to `2.43.4`; update the pin deliberately in `extensions/n8n/docker-compose.yml` when upgrading. Workflow assets are mounted read-only in the container, while the persistent `n8n_data` volume remains writable for n8n state.
+
 ## Prerequisites and setup
 
 1. Install Docker Engine and the Docker Compose plugin.
