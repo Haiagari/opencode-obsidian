@@ -36,6 +36,7 @@ The user selected personal daily use as the primary audience, rejected a documen
 - [x] T9 — Verify core and extension checks, preserved local configuration, compatibility, and final diff.
 - [x] T10 — Default the unauthenticated Telegram alert webhook to inactive and document/test the activation guard.
 - [x] T11 — Correct dashboard and governance guidance for direct alert sends and receiver security preconditions.
+- [x] T12 — Replace the orphan gitlink with normal extension files, preserve ignored `.env`, review/stage only intended changes, and create the user-authorized commit.
 
 ## Acceptance Criteria
 - README identifies the primary user, problem, and core loop immediately.
@@ -53,10 +54,10 @@ The user selected personal daily use as the primary audience, rejected a documen
 - `extensions/n8n/.env` remains present and ignored; its contents were not read.
 - Scoped active-path search found no old `automation/n8n-lab` references; historical integrity reports retain old paths.
 - T10: `python3 tests/test_core_optional_extensions.py` — 6 passed; `make test` — 186 passed; `git diff --check` — passed. No Docker was started.
-- No commit, push, deployment, or Docker run.
+- Finalization staged 52 intended paths, removed the old gitlink, excluded `.env`, and committed after tests and native review. No push, deployment, or Docker run.
 
 ## Progress
-- T1–T11 completed. The dashboard and governance docs now reflect the current direct-send alert interface and its security preconditions. Native review found the imported Telegram alert webhook active without receiver authentication; the bounded correction disabled it by default, required an explicit strong secret in the sender, documented Header Auth before activation, and added regression coverage.
+- T1–T12 completed. The dashboard and governance docs now reflect the current direct-send alert interface and its security preconditions. Native review found the imported Telegram alert webhook active without receiver authentication; the bounded correction disabled it by default, required an explicit strong secret in the sender, documented Header Auth before activation, and added regression coverage.
 - The old path was indexed as a gitlink (`160000`, commit `658e1da`) with no `.gitmodules` or recoverable module URL. The user chose to make the moved n8n extension a normal repo-owned directory rather than restore a submodule.
 - Compatibility shims remain under existing `bin/` and root script paths; n8n notifications are opt-in (`BUNKER_N8N_ALERTS=1`) and cannot change ingestion or push outcomes.
 
@@ -66,7 +67,7 @@ The user selected personal daily use as the primary audience, rejected a documen
 - Parent re-ran `git diff --check`; passed.
 - Static review found no active old-path references except historical integrity reports. No Docker or live integrations were exercised.
 - Native risk assess was unavailable (`empty output`) and failed closed to high; the required independent verification completed. Native review found CRITICAL `R1-001` on the active unauthenticated webhook. The 40-diff-line correction was applied; targeted validation approved the corrected candidate. Non-blocking warnings `R3-001` and `R4-001` remain informational follow-ups.
-- Exact native acknowledgement completed for lineage `review-89fab3b99e8a6389`; authority was burned. This does not authorize commit, push, deployment, or release.
+- Exact native acknowledgement completed for final staged lineage `review-27df857af6346be6`; authority was burned. Commit `a29d953` was created locally; review does not authorize delivery or push.
 
 ## Next Step
-Complete the index replacement, stage intended files with local `.env` excluded, inspect/review the staged snapshot, and make the user-authorized commit. Do not push.
+No further task work is pending. The commit is local; push remains a separate user decision.
