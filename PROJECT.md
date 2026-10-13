@@ -27,7 +27,7 @@ For current capabilities, scope boundaries, and staged priorities, see [Product 
 ## Architecture Layers
 
 ```text
-Capture       → wiki/inbox, .raw, sanitize_ingest.py (prompt injection defense), handovers
+Capture       → wiki/inbox, .raw, sanitize_ingest.py (best-effort text sanitization), handovers
 Normalize     → _templates, skills/wiki-ingest
 Concurrency   → vault_lock.py, bin/vault-lock.sh (POSIX fcntl.flock + atomic rename)
 Classify      → wiki/sources, entities, concepts, projects, comparisons
@@ -57,7 +57,7 @@ Visualization → dashboard, canvases, Obsidian graph
 
 ### 3. Defensive Ingestion Pipeline (`scripts/sanitize_ingest.py`)
 - **Zero-Width Token Stripping**: Cleans invisible and zero-width unicode characters used in token smuggling.
-- **Anti-Prompt-Injection**: Identifies and defangs adversarial override phrases (e.g. "ignore previous instructions", "system prompt override", developer mode jailbreaks).
+- **Best-Effort Input Hygiene**: Defangs a limited set of override phrases and strips selected invisible characters and HTML; sanitized output remains untrusted.
 - **Tag & Comment Neutralization**: Strips dangerous HTML tags (`<script>`, `<iframe>`, `<object>`) and malicious comments.
 
 ### 4. Optional webhook alert signing (`extensions/n8n/bin/bunker-alert.sh`; compatibility: `bin/bunker-alert.sh`)
@@ -73,7 +73,7 @@ Visualization → dashboard, canvases, Obsidian graph
 ### Added
 - **SQLite FTS5 Engine**: Incremental indexing and BM25 ranking via stdlib `sqlite3`.
 - **Multi-Writer Locking**: POSIX `fcntl.flock` advisory locks and atomic file mutations.
-- **Defensive Ingestion**: Anti-prompt-injection and payload sanitization pipeline.
+- **Defensive Ingestion**: Best-effort text sanitization with explicit limits; sanitized content remains untrusted.
 - **HMAC-SHA256 header generation**: `bunker-alert.sh` adds a signature to outgoing webhook requests; the reviewed alerter does not validate it, so this is not end-to-end webhook verification.
 - **Unit Testing Suite**: `make test-unit` adds tests for selected Python subsystems.
 
@@ -140,6 +140,7 @@ n8n can support asynchronous workflows and integrations, but it is not required 
 | Signed webhook alert | `./bin/bunker-alert.sh target info "msg"` |
 | SQLite FTS5 search | `python3 scripts/fts_engine.py "query"` |
 | Pre-ingest sanitizer | `python3 scripts/sanitize_ingest.py [file]` |
+| Optional local HTTP capture | `docs/local-ingest-api.md` (loopback only, token required) |
 | Full local check | `./bin/bunker-check.sh` |
 | Core checks | `make test-core` (no Docker/n8n config) |
 | Full test suite | `make test` (core + optional extension validation) |

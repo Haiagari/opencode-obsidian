@@ -1,7 +1,7 @@
 ---
 type: concept
 title: "opencode obsidian architecture"
-updated: 2026-05-14
+updated: 2026-10-13
 status: active
 ---
 
@@ -13,6 +13,10 @@ status: active
 
 ## Summary
 `opencode-obsidian` is a **Hard Detach** from the original `claude-obsidian` project, optimized specifically for the **OpenCode** agentic ecosystem. It implements the **LLM Wiki Pattern** to provide persistent, compounding knowledge across sessions.
+
+![OpenCode-Obsidian architecture](../../docs/diagrams/architecture-overview.png)
+
+The core remains local-first: Markdown is the source of truth, SQLite FTS5/BM25 is rebuildable, the optional ingest API writes only to a review inbox, and n8n is a separate extension.
 
 ## Core Pillars
 
@@ -28,11 +32,11 @@ The knowledge base is structured to be token-efficient:
 3. **Individual Wiki Pages**: Detailed notes on specific concepts, entities, or sources.
 
 ### 3. Agentic Skills
-Custom-built skills for OpenCode located in `~/.config/opencode/skills/`:
+Custom-built skills installed for OpenCode in `~/.config/opencode/skills/`:
 - `wiki`: System orchestrator.
 - `wiki-ingest`: Source processor.
 - `wiki-query`: RAG-less knowledge retrieval.
-- `wiki-save`: Conversation persistence.
+- `save`: Conversation persistence.
 - `wiki-lint`: Health and link maintenance.
 
 ### 4. MCP Integration
@@ -40,6 +44,11 @@ Uses `@bitbonsai/mcpvault` via `stdio` to allow the agent to:
 - Read/Write notes directly.
 - Search content using regex.
 - List directory structures.
+
+### 5. Local Capture and Retrieval
+- The optional Go ingest API listens on loopback, requires a token, sanitizes input, and writes to `wiki/inbox/`; it does not file knowledge pages automatically.
+- `scripts/retrieve.py` uses a local SQLite FTS5/BM25 index. Markdown notes remain the source of truth and the index can be rebuilt.
+- n8n is an optional extension. AOC and alert webhook workflows remain inactive pending receiver-side controls.
 
 ## File Structure
 - `.raw/`: Immutable source documents.

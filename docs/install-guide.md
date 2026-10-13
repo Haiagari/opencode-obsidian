@@ -18,7 +18,7 @@ bash bin/setup-vault.sh
 
 In Obsidian, choose **Manage Vaults → Open folder as vault** and select the cloned repository. Open the same repository in OpenCode to use its instructions, skills, and scripts.
 
-The setup script creates the local `.raw/` input folder and Obsidian vault configuration. It does not install a Claude Code marketplace plugin.
+The setup script creates the local `.raw/` input folder and Obsidian vault configuration. If the bundled Excalidraw plugin is present but its runtime is missing, the script downloads the pinned v2.22.0 release and verifies its SHA-256 checksum. It does not install a Claude Code marketplace plugin.
 
 ## Use an existing vault
 
@@ -51,6 +51,7 @@ Never place credentials, private source documents, or personal notes in tracked 
 
 ## Optional extensions
 
+- **Local ingest API:** Optional loopback-only Go endpoint for authenticated short-note capture. See [Local Ingest API](local-ingest-api.md); it requires Go and a local token and does not replace the `wiki-ingest` workflow.
 - **n8n:** Optional workflows under `extensions/n8n/`. See [N8N-SETUP.md](N8N-SETUP.md). The AOC and alert webhook workflows are inactive prototypes; do not activate or expose them until their authentication and abuse controls are implemented and tested.
 - **Host and GitHub utilities:** Read [operations guidance](../extensions/operations/README.md) before running tools that affect your host or repositories.
 

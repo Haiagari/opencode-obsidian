@@ -138,6 +138,13 @@ def validate_workflow(filepath):
 
     # 6. Validar active flag
     active = wf.get('active', False)
+    webhook_triggers = [
+        node.get('name', '<unnamed>') for node in nodes
+        if node.get('type', '').lower().endswith('.webhook')
+    ]
+    if webhook_triggers:
+        test(f'{rel}: workflow con webhook permanece inactivo', active is False,
+             f'webhook triggers={webhook_triggers!r}; implement receiver auth, payload limits and rate limiting first')
     if name == 'Bunker AOC v4 Enterprise':
         test(f'{rel}: AOC experimental permanece inactivo', active is False,
              'no habilitar antes de implementar y probar autenticación y rate limiting')

@@ -1,4 +1,17 @@
-# HERRD — Guía Completa Definitiva
+---
+type: entity
+title: "Herdr"
+domain: ai-tools
+created: 2026-07-29
+updated: 2026-10-13
+tags: [terminal, ai-agents]
+status: active
+related: []
+sources:
+  - https://github.com/ogulcancelik/herdr
+---
+
+# Herdr — Guía completa
 
 > Terminal workspace manager for AI coding agents.
 > Versión: 0.7.5 | Licencia: Apache 2.0 | Autor: Oğulcan Çelik

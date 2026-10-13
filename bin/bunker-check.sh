@@ -46,11 +46,19 @@ else
 fi
 
 section "Evidence index"
-if [[ -f wiki/meta/evidence-index.md && -f wiki/meta/evidence-manifest.json ]]; then
-  echo "OK: evidence index and manifest exist."
+if ./bin/evidence-index.sh; then
+  echo "OK: evidence index and manifest generated."
 else
-  echo "FAIL: evidence index or manifest missing."
+  echo "FAIL: evidence index generation failed."
   FAIL=1
+fi
+
+section "Tracked Obsidian plugin state"
+if git ls-files -- '.obsidian/plugins/*/data.json' | grep -q .; then
+  echo "FAIL: plugin data.json files are tracked; remove local plugin state from the index."
+  FAIL=1
+else
+  echo "OK: no Obsidian plugin data.json files are tracked."
 fi
 
 section "Wiki integrity"

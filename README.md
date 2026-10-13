@@ -81,7 +81,7 @@ Bunker OS is for personal daily use: a practical way to turn sources, research, 
 
 ### 🧠 Knowledge
 
-- **Persistent wiki** — 200+ pages of concepts, entities, sources, blueprints, and projects
+- **Persistent wiki** — 200+ pages of concepts, entities, and source notes
 - **Autoresearch** — 3-round autonomous web research: decomposes topics, searches, cross-references sources, and files everything into the wiki
 - **SQLite FTS5 + BM25 search** — fast keyword and full-text search with incremental SHA-256 caching (`.vault-meta/fts5/vault_fts.db`), pure Python stdlib, zero external dependencies
 - **`/think`** — 10-principle decision framework for architectural decisions and audits
@@ -129,7 +129,7 @@ Host and repository utilities are optional implementations in `extensions/operat
 | Evidence checksums | ✅ | ❌ |
 | Dead Letter Queue | ✅ | ❌ |
 | Multi-channel alerts | Optional workflows; sender-generated HMAC is not validated by reviewed alerter | ❌ |
-| Security sanitization | Pre-ingest anti-injection | ❌ |
+| Security sanitization | Best-effort pre-ingest text sanitization; sanitized text remains untrusted | ❌ |
 | Multi-methodology | ❌ | LYT / PARA / Zettelkasten |
 | Multi-writer safe | ✅ (`fcntl.flock` + atomic rename) | ✅ |
 | Plugin marketplace | ❌ | Claude Code plugin |
@@ -205,6 +205,8 @@ python3 scripts/fts_engine.py "query"  # SQLite FTS5 + BM25 ranked search
 python3 scripts/sanitize_ingest.py doc # Pre-ingest prompt injection check
 python3 scripts/retrieve.py "query"    # Legacy BM25 text retrieval
 ```
+
+An optional authenticated loopback capture endpoint is documented in [Local Ingest API](docs/local-ingest-api.md). It requires a local token and is separate from n8n.
 
 ### `autoresearch` — research support for the knowledge workflow
 
@@ -327,23 +329,15 @@ Environment: PostgreSQL recommended, queue mode with Redis for horizontal scalin
 
 ### Vault flow
 
-![Bunker OS local knowledge workflow](docs/architecture.svg)
+![OpenCode-Obsidian architecture overview](docs/diagrams/architecture-overview.png)
+
+The operational illustrations cover [source ingestion](docs/diagrams/ingestion-illustration.png), [retrieval](docs/diagrams/retrieval-illustration.png), and [trust boundaries](docs/diagrams/trust-boundaries-illustration.png). See the [visual guide](docs/diagrams/README.md) for descriptions and the related technical docs.
 
 New raw inputs and source notes are ignored by Git by default. Previously tracked source files remain public in the repository history; see [AGENTS.md](AGENTS.md#vault) before placing private content in the vault.
 
-### Async automation & Security
+### Optional n8n extension
 
-```
-OpenCode (skills) / Local CLI
-  ├→ bin/bunker-alert.sh (generates HMAC-SHA256 header; receiver validation is not implemented in reviewed alerter)
-  └→ n8n Docker (localhost:5678)
-       ├→ Webhooks → AOC pipeline → GitHub Issues
-       ├→ Manual run → Health Check (static status only)
-       ├→ Schedule → Emergency Reprocessor (5 min)
-       └→ Error Trigger → Dead Letter Queue
-            ↓
-         Notifications (Slack / Telegram / Discord)
-```
+n8n runs separately from the core local-first vault. The AOC and alert webhook workflows remain inactive until receiver authentication, payload validation, and rate limiting are implemented and tested. The manual Health Check returns static status; it does not monitor service health. See [n8n setup](docs/N8N-SETUP.md), [security boundaries](docs/security-boundaries.md), and the trust-boundary illustration above.
 
 ---
 
@@ -353,16 +347,7 @@ The Bunker includes a fast, zero-dependency text retrieval engine using SQLite F
 
 OpenCode (the agent) receives the ranked chunks and applies its own model to understand and synthesize the answer. **The agent is the only intelligence in the loop.**
 
-**Retrieval flow:**
-```
-Query
-  ↓
-SQLite FTS5 (`.vault-meta/fts5/vault_fts.db`) with BM25 Ranking
-  ↓
-Top K results (ranked by relevance)
-  ↓
-OpenCode reads & synthesizes
-```
+![Local retrieval flow from Markdown pages through FTS5/BM25 to an OpenCode answer](docs/diagrams/retrieval-illustration.png)
 
 ### Key Architectural Characteristics
 
@@ -392,7 +377,7 @@ python3 scripts/fts_engine.py "n8n docker automation" --top 5
 
 | Suite | Tests | What it validates |
 |---|:---:|---|
-| `test-core` | Core | Wiki integrity, shell checks, retrieval, unit tests; no Docker/n8n `.env` required |
+| `test-core` | Core | Wiki integrity, shell checks, retrieval, Python tests, Go HTTP tests, and local lifecycle tests; no Docker/n8n `.env` required |
 | `test-extensions` | Optional | n8n workflow JSON and compose YAML validation; does not start Docker |
 | `test` | Both | Runs core and optional extension validation |
 
@@ -406,9 +391,9 @@ make test-extensions  # Optional extension static checks
 make test             # Run both core and extension checks
 ```
 
-### Secrets scanned
+### Limited script secret-pattern checks
 
-The test suite automatically checks for:
+`make test-scripts` checks shell scripts in `bin/` and `extensions/` for a short list of common patterns:
 
 - OpenAI keys (`sk-...`)
 - GitHub PAT (`ghp_...`, `gho_...`)
@@ -445,16 +430,19 @@ opencode-obsidian/
 ├── scripts/                      Python + bash helpers
 │   ├── fts_engine.py             SQLite FTS5 + BM25 incremental search engine
 │   ├── vault_lock.py             POSIX advisory locking (`fcntl.flock`) & atomic ops
-│   ├── sanitize_ingest.py        Pre-ingest prompt injection & payload sanitizer
+│   ├── sanitize_ingest.py        Best-effort pre-ingest text sanitizer
 │   ├── bm25-index.py             BM25 indexer
 │   └── retrieve.py               Search orchestrator
 ├── tests/                        Core + optional extension checks
-│   ├── test_workflow_connections.py
-│   ├── test_wiki_integrity.sh
-│   ├── test_scripts.sh
-│   ├── test_fts_engine.py
-│   ├── test_vault_lock.py
-│   └── test_sanitize_ingest.py
+│   ├── test_local_lifecycle.py   Capture → index → archive → local Git publish
+│   ├── test_optional_operations.py Setup and operation safety checks
+│   ├── test_wiki_integrity.py    Integrity scanner regressions
+│   ├── test_fts_engine.py        SQLite FTS5 + archive behavior
+│   ├── test_bunker_ingest.py     Local ingestion staging
+│   └── test_sanitize_ingest.py   Sanitizer behavior
+├── docs/                         Install, security, architecture, and API guides
+│   ├── local-ingest-api.md       Optional authenticated loopback Go endpoint
+│   └── diagrams/                 Generated architecture, ingestion, retrieval, and security illustrations
 ├── Makefile                      Test targets & root runner
 ├── bin/                          Core commands + compatibility shims
 │   ├── bunker-check.sh           Full health check
@@ -469,12 +457,12 @@ opencode-obsidian/
 │   ├── hot.md                    Recent context
 │   ├── index.md                  Master catalog
 │   ├── log.md                    Operation log
-│   ├── sources/                  External sources
+│   ├── sources/                  External source notes (new files ignored by Git)
 │   ├── entities/                 People, orgs, products
 │   ├── concepts/                 Concepts and patterns
 │   ├── meta/                     Dashboard, handovers, evidence
-│   └── blueprints/               Architecture blueprints
-├── .raw/                         Immutable source documents
+├── .obsidian/                    Shared-safe settings and plugin manifests
+├── .raw/                         Local raw inputs; several historical research files remain tracked
 ├── .github/workflows/test.yml    CI: runs on push/PR
 ├── README.md                     This file
 ├── PROJECT.md                    Technical documentation

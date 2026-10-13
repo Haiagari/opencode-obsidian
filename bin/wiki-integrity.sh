@@ -60,6 +60,7 @@ def resolves(target: str) -> bool:
 incoming = {f: 0 for f in md_files}
 broken_links = []
 wikilink_refs = []
+file_types = {}
 
 for f in md_files:
     rel_f = relative(f)
@@ -70,6 +71,7 @@ for f in md_files:
         m = type_re.search(fm.group(0))
         if m:
             file_type = m.group(1).strip().lower()
+    file_types[f] = file_type
     for match in wiki_link_re.finditer(text):
         target = match.group(1).strip()
         wikilink_refs.append({"from": relative(f), "target": target})
@@ -85,14 +87,14 @@ ignored_orphan_names = {"index.md", "hot.md", "log.md", "overview.md", "getting-
 orphans = []
 for f, count in incoming.items():
     rel = relative(f)
-    if count == 0 and "/meta/" not in rel and "/archive/" not in rel and f.name not in ignored_orphan_names and file_type != "alias":
+    if count == 0 and "/meta/" not in rel and "/archive/" not in rel and f.name not in ignored_orphan_names and file_types[f] != "alias":
         orphans.append(rel)
 
 short_notes = []
 missing_frontmatter = []
 for f in md_files:
     rel = relative(f)
-    if "/archive/" not in rel and "/inbox/" not in rel and file_type != "alias":
+    if "/archive/" not in rel and "/inbox/" not in rel and file_types[f] != "alias":
         lines = f.read_text(errors="ignore").splitlines()
         if len(lines) < short_limit:
             short_notes.append({"path": rel, "lines": len(lines)})

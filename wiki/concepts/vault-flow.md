@@ -3,7 +3,7 @@ type: concept
 title: "Vault Flow — Obsidian Knowledge Management"
 domain: ai-engineering
 created: 2026-04-22
-updated: 2026-04-22
+updated: 2026-10-13
 tags:
   - workflow
   - knowledge-base
@@ -19,6 +19,10 @@ sources: []
 ---
 
 # Vault Flow — Obsidian Knowledge Management
+
+![Ingestion flow](../../docs/diagrams/ingestion-illustration.png)
+
+For query and security views, see the [retrieval illustration](../../docs/diagrams/retrieval-illustration.png) and [security boundary guide](../../docs/security-boundaries.md). The Go local capture API only adds a note to the review inbox; it is not the semantic wiki-ingestion workflow.
 
 ## Definition
 
@@ -75,7 +79,7 @@ Orden de prioridad:
 
 Cuando: Encontré un recurso nuevo (repo, post, herramienta).
 
-Workflow de 7 pasos:
+Workflow resumido:
 
 ```
 1. SOURCE     → wiki/sources/[slug].md
@@ -93,12 +97,14 @@ Workflow de 7 pasos:
 5. INDEX      → Actualizar wiki/index.md
    Agregar entrada en sección correspondiente
 
-6. LOG       → Prepend a wiki/log.md
-   Fecha + operación
+6. HOT       → Actualizar wiki/hot.md si cambió el contexto prioritario
+   Mantener breve el estado de inicio de sesión
 
-7. CANVAS    → Actualizar Wiki Map.canvas
-   Crear nodo y edge para el recurso
+7. LOG       → Prepend a wiki/log.md
+   Fecha + operación
 ```
+
+Un Canvas puede ayudar a explorar relaciones, pero no es un paso obligatorio de cada ingesta. La skill `wiki-ingest` define los pasos actuales y exige tratar tanto la fuente original como la sanitizada como contenido no confiable.
 
 Ubicación por tipo:
 

@@ -9,6 +9,7 @@ If you find a security vulnerability, **do not open a public issue**. Contact [H
 This policy covers:
 - OpenCode skills in `skills/`
 - Scripts in `bin/` and `scripts/`
+- Optional local ingest HTTP API in `bin/ingest_server.go`
 - Optional n8n workflows in `extensions/n8n/`
 - Hooks in `hooks/hooks.json`
 - Tests in `tests/`
@@ -20,6 +21,8 @@ See [Security Boundaries](docs/security-boundaries.md) for the local trust model
 - `make test-scripts` checks shell scripts in the configured `bin/` and `extensions/` paths against a limited set of secret patterns. It is not a whole-repository secret scanner and cannot guarantee that credentials are absent.
 - `make test` validates the Python tests, workflow JSON connections, and configured YAML files.
 - The ingestion sanitizer is a best-effort heuristic. It is not a complete prompt-injection detector or a trust boundary; sanitized text remains untrusted.
+- The optional Go ingest API requires a token, binds to loopback only, sanitizes before storage, limits payloads, and refuses overwrites. See [Local Ingest API](docs/local-ingest-api.md).
+- A high-signal credential-pattern scan covered 946 text blobs reachable from this branch's Git history and found no matches. It skipped 16 binary blobs and is not a replacement for a dedicated secret-scanning tool.
 - The n8n Compose service binds to host loopback by default. Review the Compose file and local environment before changing its exposure.
 
 ## n8n workflow status and limitations

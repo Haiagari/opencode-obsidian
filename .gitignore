@@ -3,8 +3,6 @@
 # .obsidian/workspace.json
 .obsidian/workspace-mobile.json
 .obsidian/plugins/*/data.json
-!.obsidian/plugins/calendar/data.json
-!.obsidian/plugins/thino/data.json
 
 # Excalidraw main.js is 8MB — downloaded by setup-vault.sh, not tracked in git
 .obsidian/plugins/obsidian-excalidraw-plugin/main.js
@@ -97,6 +95,8 @@ _attachments/
 # CocoIndex Code (ccc)
 /.cocoindex_code/
 .vault-meta/
+wiki/**/.*.lock
+wiki/inbox/
 
 # Personal vault content — these stay local only
 wiki/projects/
@@ -109,6 +109,7 @@ wiki/canvases/
 wiki/.raw/
 wiki/meta/evidence-*
 wiki/meta/INTEGRITY-*
+wiki/meta/lint-report-*.md
 wiki/meta/ingestion-log.md
 wiki/*.canvas
 
