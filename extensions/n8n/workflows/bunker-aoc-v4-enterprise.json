@@ -12,7 +12,10 @@
       "name": "AOC Entry Point",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [0, 240],
+      "position": [
+        0,
+        240
+      ],
       "webhookId": "v4-aoc-entry"
     },
     {
@@ -23,7 +26,10 @@
       "name": "Ingress Guard",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [280, 240]
+      "position": [
+        280,
+        240
+      ]
     },
     {
       "id": "v4-valid-if",
@@ -35,17 +41,27 @@
               "id": "ok-check",
               "leftValue": "={{ $json.okToProceed }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
-          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          }
         },
         "options": {}
       },
       "name": "IF Event Valid",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [560, 240]
+      "position": [
+        560,
+        240
+      ]
     },
     {
       "id": "v4-rejected",
@@ -55,7 +71,10 @@
       "name": "Rejected Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [840, 420]
+      "position": [
+        840,
+        420
+      ]
     },
     {
       "id": "v4-redis-dedup",
@@ -65,7 +84,10 @@
       "name": "Redis Idempotency",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [840, 160]
+      "position": [
+        840,
+        160
+      ]
     },
     {
       "id": "v4-replay-if",
@@ -77,17 +99,27 @@
               "id": "replay-check",
               "leftValue": "={{ $json.idempotency.replay }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
-          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          }
         },
         "options": {}
       },
       "name": "IF Idempotent Replay",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1120, 160]
+      "position": [
+        1120,
+        160
+      ]
     },
     {
       "id": "v4-cached",
@@ -97,7 +129,10 @@
       "name": "Cached Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1400, -80]
+      "position": [
+        1400,
+        -80
+      ]
     },
     {
       "id": "v4-ai-triage",
@@ -109,35 +144,55 @@
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "model", "value": "={{ $env.OPENROUTER_API_KEY ? 'mistralai/mistral-7b-instruct:free' : 'llama3.2' }}" },
-            { "name": "messages", "value": "={{ [ { role: 'system', content: 'Eres un triage de seguridad. Clasifica el evento en UNA de estas acciones:\\n- create: crear issue nuevo\\n- review: necesita revision humana\\n- duplicate: es duplicado\\n- emergency: critico, encolar urgente\\n\\nResponde SOLO con el nombre de la accion en JSON: {\"action\": \"...\", \"confidence\": 0-1, \"reason\": \"...\"}' }, { role: 'user', content: 'Evento: ' + JSON.stringify({ title: $json.title, description: $json.description, priority: $json.priority, source: $json.source }) } ] | toJson }}" },
-            { "name": "temperature", "value": 0.1 }
+            {
+              "name": "model",
+              "value": "={{ $env.OPENROUTER_API_KEY ? 'mistralai/mistral-7b-instruct:free' : 'llama3.2' }}"
+            },
+            {
+              "name": "messages",
+              "value": "={{ [ { role: 'system', content: 'Eres un triage de seguridad. Clasifica el evento en UNA de estas acciones:\\n- create: crear issue nuevo\\n- review: necesita revision humana\\n- duplicate: es duplicado\\n- emergency: critico, encolar urgente\\n\\nResponde SOLO con el nombre de la accion en JSON: {\"action\": \"...\", \"confidence\": 0-1, \"reason\": \"...\"}' }, { role: 'user', content: 'Evento: ' + JSON.stringify({ title: $json.title, description: $json.description, priority: $json.priority, source: $json.source }) } ] | toJson }}"
+            },
+            {
+              "name": "temperature",
+              "value": 0.1
+            }
           ]
         },
-        "options": { "timeout": 15000 },
+        "options": {
+          "timeout": 15000
+        },
         "sendQuery": false,
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "={{ $env.OPENROUTER_API_KEY ? 'Bearer ' + $env.OPENROUTER_API_KEY : '' }}" }
+            {
+              "name": "Authorization",
+              "value": "={{ $env.OPENROUTER_API_KEY ? 'Bearer ' + $env.OPENROUTER_API_KEY : '' }}"
+            }
           ]
         }
       },
       "name": "AI Triage",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1400, 240],
+      "position": [
+        1400,
+        240
+      ],
       "continueOnFail": true
     },
     {
       "id": "v4-ai-parse",
       "parameters": {
-        "jsCode": "const e = $('Redis Idempotency').first().json;\nconst response = $json || {};\nlet action = 'create';\nlet confidence = 0;\nlet reason = 'AI fallback: parse error';\n\ntry {\n  const text = response.choices?.[0]?.message?.content || response.response || JSON.stringify(response);\n  const parsed = JSON.parse(text.replace(/```json|```|\\n/g, '').trim());\n  action = ['create','review','duplicate','emergency'].includes(parsed.action) ? parsed.action : 'create';\n  confidence = parsed.confidence || 0;\n  reason = parsed.reason || '';\n} catch (err) {\n  // fallback: si falla AI, crear issue\n}\n\nreturn [{ json: { ...e, ai: { action, confidence, reason } } }];\n"
+        "jsCode": "const e = $('Redis Idempotency').first().json;\nconst response = $json || {};\nlet action = 'review';\nlet confidence = 0;\nlet reason = 'AI fallback: parse error';\n\ntry {\n  const text = response.choices?.[0]?.message?.content || response.response || JSON.stringify(response);\n  const parsed = JSON.parse(text.replace(/```json|```|\\n/g, '').trim());\n  const allowedActions = ['create', 'review', 'duplicate', 'emergency'];\n  const parsedConfidence = parsed.confidence;\n\n  if (allowedActions.includes(parsed.action)\n      && typeof parsedConfidence === 'number'\n      && Number.isFinite(parsedConfidence)) {\n    action = parsed.action;\n    confidence = Math.max(0, Math.min(1, parsedConfidence));\n    reason = typeof parsed.reason === 'string' ? parsed.reason : '';\n  } else {\n    reason = 'AI fallback: invalid action or confidence; human review required';\n  }\n} catch (err) {\n  // Fail closed: malformed or unavailable AI output routes to human review.\n}\n\nreturn [{ json: { ...e, ai: { action, confidence, reason } } }];\n"
       },
       "name": "Parse AI Decision",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1680, 160]
+      "position": [
+        1680,
+        160
+      ]
     },
     {
       "id": "v4-if-create",
@@ -149,17 +204,27 @@
               "id": "create-check",
               "leftValue": "={{ $json.ai.action }}",
               "rightValue": "create",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ],
-          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          }
         },
         "options": {}
       },
       "name": "IF Create Action",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1960, 80]
+      "position": [
+        1960,
+        80
+      ]
     },
     {
       "id": "v4-create-issue",
@@ -170,13 +235,19 @@
         "owner": "={{ $env.GITHUB_OWNER }}",
         "repository": "={{ $env.GITHUB_REPO }}",
         "labels": {
-          "labels": ["aoc", "automated"]
+          "labels": [
+            "aoc",
+            "automated"
+          ]
         }
       },
       "name": "Create GitHub Issue",
       "type": "n8n-nodes-base.github",
       "typeVersion": 2,
-      "position": [2240, -80]
+      "position": [
+        2240,
+        -80
+      ]
     },
     {
       "id": "v4-if-review",
@@ -188,17 +259,27 @@
               "id": "review-check",
               "leftValue": "={{ $json.ai.action }}",
               "rightValue": "review",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ],
-          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          }
         },
         "options": {}
       },
       "name": "IF Review Action",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [2240, 240]
+      "position": [
+        2240,
+        240
+      ]
     },
     {
       "id": "v4-review-issue",
@@ -209,13 +290,19 @@
         "owner": "={{ $env.GITHUB_OWNER }}",
         "repository": "={{ $env.GITHUB_REPO }}",
         "labels": {
-          "labels": ["aoc", "human-review"]
+          "labels": [
+            "aoc",
+            "human-review"
+          ]
         }
       },
       "name": "Create Review Issue",
       "type": "n8n-nodes-base.github",
       "typeVersion": 2,
-      "position": [2520, 160]
+      "position": [
+        2520,
+        160
+      ]
     },
     {
       "id": "v4-if-emergency",
@@ -227,17 +314,27 @@
               "id": "emergency-check",
               "leftValue": "={{ $json.ai.action }}",
               "rightValue": "emergency",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ],
-          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          }
         },
         "options": {}
       },
       "name": "IF Emergency Action",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [2520, 400]
+      "position": [
+        2520,
+        400
+      ]
     },
     {
       "id": "v4-emergency-queue",
@@ -247,7 +344,10 @@
       "name": "Emergency Queue",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2800, 480]
+      "position": [
+        2800,
+        480
+      ]
     },
     {
       "id": "v4-build-notif",
@@ -257,7 +357,10 @@
       "name": "Build Notification",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2800, 240]
+      "position": [
+        2800,
+        240
+      ]
     },
     {
       "id": "v4-if-slack",
@@ -269,17 +372,27 @@
               "id": "slack-check",
               "leftValue": "={{ $env.SLACK_AOC_CHANNEL_ID || '' }}",
               "rightValue": "",
-              "operator": { "type": "string", "operation": "notEmpty" }
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
             }
           ],
-          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          }
         },
         "options": {}
       },
       "name": "IF Slack Enabled",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [3080, 160]
+      "position": [
+        3080,
+        160
+      ]
     },
     {
       "id": "v4-notify-slack",
@@ -290,7 +403,10 @@
       "name": "Notify Slack",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2,
-      "position": [3360, 80]
+      "position": [
+        3360,
+        80
+      ]
     },
     {
       "id": "v4-after-slack",
@@ -298,7 +414,10 @@
       "name": "After Slack",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [3640, 80]
+      "position": [
+        3640,
+        80
+      ]
     },
     {
       "id": "v4-skip-slack",
@@ -306,7 +425,10 @@
       "name": "Skip Slack",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [3360, 240]
+      "position": [
+        3360,
+        240
+      ]
     },
     {
       "id": "v4-if-telegram",
@@ -318,17 +440,27 @@
               "id": "tg-check",
               "leftValue": "={{ $env.TELEGRAM_AOC_CHAT_ID || '' }}",
               "rightValue": "",
-              "operator": { "type": "string", "operation": "notEmpty" }
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
             }
           ],
-          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          }
         },
         "options": {}
       },
       "name": "IF Telegram Enabled",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [3640, 240]
+      "position": [
+        3640,
+        240
+      ]
     },
     {
       "id": "v4-notify-tg",
@@ -342,7 +474,10 @@
       "name": "Notify Telegram",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 2,
-      "position": [3920, 160]
+      "position": [
+        3920,
+        160
+      ]
     },
     {
       "id": "v4-after-tg",
@@ -350,7 +485,10 @@
       "name": "After Telegram",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [4200, 160]
+      "position": [
+        4200,
+        160
+      ]
     },
     {
       "id": "v4-skip-tg",
@@ -358,7 +496,10 @@
       "name": "Skip Telegram",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [3920, 320]
+      "position": [
+        3920,
+        320
+      ]
     },
     {
       "id": "v4-if-discord",
@@ -370,17 +511,27 @@
               "id": "dc-check",
               "leftValue": "={{ $env.DISCORD_AOC_WEBHOOK_URL || '' }}",
               "rightValue": "",
-              "operator": { "type": "string", "operation": "notEmpty" }
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
             }
           ],
-          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          }
         },
         "options": {}
       },
       "name": "IF Discord Enabled",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [4200, 320]
+      "position": [
+        4200,
+        320
+      ]
     },
     {
       "id": "v4-notify-dc",
@@ -390,8 +541,14 @@
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "content", "value": "={{ '**AOC ' + $json.notification.severity + '** ' + $json.notification.title + '\\n' + $json.notification.summary + '\\n`' + $json.correlationId + '`' }}" },
-            { "name": "username", "value": "Bunker AOC" }
+            {
+              "name": "content",
+              "value": "={{ '**AOC ' + $json.notification.severity + '** ' + $json.notification.title + '\\n' + $json.notification.summary + '\\n`' + $json.correlationId + '`' }}"
+            },
+            {
+              "name": "username",
+              "value": "Bunker AOC"
+            }
           ]
         },
         "options": {}
@@ -399,7 +556,10 @@
       "name": "Notify Discord",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [4480, 240]
+      "position": [
+        4480,
+        240
+      ]
     },
     {
       "id": "v4-after-dc",
@@ -407,7 +567,10 @@
       "name": "After Discord",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [4760, 240]
+      "position": [
+        4760,
+        240
+      ]
     },
     {
       "id": "v4-skip-dc",
@@ -415,7 +578,10 @@
       "name": "Skip Discord",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [4480, 400]
+      "position": [
+        4480,
+        400
+      ]
     },
     {
       "id": "v4-write-audit",
@@ -425,7 +591,10 @@
       "name": "Write Audit",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [5040, 240]
+      "position": [
+        5040,
+        240
+      ]
     },
     {
       "id": "v4-final-status",
@@ -435,7 +604,10 @@
       "name": "Final Status",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [5320, 240]
+      "position": [
+        5320,
+        240
+      ]
     },
     {
       "id": "v4-webhook-if",
@@ -447,17 +619,27 @@
               "id": "webhook-check",
               "leftValue": "={{ $json.triggerType }}",
               "rightValue": "reprocessor",
-              "operator": { "type": "string", "operation": "notEqual" }
+              "operator": {
+                "type": "string",
+                "operation": "notEqual"
+              }
             }
           ],
-          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          }
         },
         "options": {}
       },
       "name": "IF Webhook Response",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [5600, 240]
+      "position": [
+        5600,
+        240
+      ]
     },
     {
       "id": "v4-respond",
@@ -468,7 +650,10 @@
         "options": {
           "responseHeaders": {
             "entries": [
-              { "name": "Content-Type", "value": "application/json" }
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
             ]
           }
         }
@@ -476,7 +661,10 @@
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [5880, 160]
+      "position": [
+        5880,
+        160
+      ]
     },
     {
       "id": "v4-repro-log",
@@ -484,21 +672,30 @@
       "name": "Reprocessor Log",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [5880, 320]
+      "position": [
+        5880,
+        320
+      ]
     },
     {
       "id": "v4-repro-trigger",
       "parameters": {
         "rule": {
           "interval": [
-            { "field": "minutes", "minutesInterval": 5 }
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
           ]
         }
       },
       "name": "Emergency Reprocessor",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [560, 700]
+      "position": [
+        560,
+        700
+      ]
     },
     {
       "id": "v4-load-emergency",
@@ -508,7 +705,10 @@
       "name": "Load Emergency Item",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [840, 700]
+      "position": [
+        840,
+        700
+      ]
     },
     {
       "id": "v4-repro-check",
@@ -520,17 +720,27 @@
               "id": "work-check",
               "leftValue": "={{ $json.hasEmergencyWork }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
-          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 }
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          }
         },
         "options": {}
       },
       "name": "IF Has Emergency Work",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [1120, 700]
+      "position": [
+        1120,
+        700
+      ]
     },
     {
       "id": "v4-repro-idle",
@@ -538,131 +748,422 @@
       "name": "Reprocessor Idle",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [1400, 880]
+      "position": [
+        1400,
+        880
+      ]
     }
   ],
   "connections": {
     "AOC Entry Point": {
-      "main": [[ { "node": "Ingress Guard", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "Ingress Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Ingress Guard": {
-      "main": [[ { "node": "IF Event Valid", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "IF Event Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "IF Event Valid": {
       "main": [
-        [ { "node": "Redis Idempotency", "type": "main", "index": 0 } ],
-        [ { "node": "Rejected Response", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Redis Idempotency",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rejected Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Redis Idempotency": {
-      "main": [[ { "node": "IF Idempotent Replay", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "IF Idempotent Replay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "IF Idempotent Replay": {
       "main": [
-        [ { "node": "Cached Response", "type": "main", "index": 0 } ],
-        [ { "node": "AI Triage", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Cached Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Triage",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "AI Triage": {
-      "main": [[ { "node": "Parse AI Decision", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "Parse AI Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parse AI Decision": {
-      "main": [[ { "node": "IF Create Action", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "IF Create Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "IF Create Action": {
       "main": [
-        [ { "node": "Create GitHub Issue", "type": "main", "index": 0 } ],
-        [ { "node": "IF Review Action", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Create GitHub Issue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF Review Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Create GitHub Issue": {
-      "main": [[ { "node": "Build Notification", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "Build Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "IF Review Action": {
       "main": [
-        [ { "node": "Create Review Issue", "type": "main", "index": 0 } ],
-        [ { "node": "IF Emergency Action", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Create Review Issue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF Emergency Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Create Review Issue": {
-      "main": [[ { "node": "Build Notification", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "Build Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "IF Emergency Action": {
       "main": [
-        [ { "node": "Emergency Queue", "type": "main", "index": 0 } ],
-        [ { "node": "Build Notification", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Emergency Queue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Build Notification": {
-      "main": [[ { "node": "IF Slack Enabled", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "IF Slack Enabled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "IF Slack Enabled": {
       "main": [
-        [ { "node": "Notify Slack", "type": "main", "index": 0 } ],
-        [ { "node": "Skip Slack", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Notify Slack",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Notify Slack": {
-      "main": [[ { "node": "After Slack", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "After Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "After Slack": {
-      "main": [[ { "node": "IF Telegram Enabled", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "IF Telegram Enabled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Skip Slack": {
-      "main": [[ { "node": "IF Telegram Enabled", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "IF Telegram Enabled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "IF Telegram Enabled": {
       "main": [
-        [ { "node": "Notify Telegram", "type": "main", "index": 0 } ],
-        [ { "node": "Skip Telegram", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Notify Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Notify Telegram": {
-      "main": [[ { "node": "After Telegram", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "After Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "After Telegram": {
-      "main": [[ { "node": "IF Discord Enabled", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "IF Discord Enabled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Skip Telegram": {
-      "main": [[ { "node": "IF Discord Enabled", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "IF Discord Enabled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "IF Discord Enabled": {
       "main": [
-        [ { "node": "Notify Discord", "type": "main", "index": 0 } ],
-        [ { "node": "Skip Discord", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Notify Discord",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Notify Discord": {
-      "main": [[ { "node": "After Discord", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "After Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "After Discord": {
-      "main": [[ { "node": "Write Audit", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "Write Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Skip Discord": {
-      "main": [[ { "node": "Write Audit", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "Write Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Write Audit": {
-      "main": [[ { "node": "Final Status", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "Final Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Final Status": {
-      "main": [[ { "node": "IF Webhook Response", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "IF Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "IF Webhook Response": {
       "main": [
-        [ { "node": "Respond to Webhook", "type": "main", "index": 0 } ],
-        [ { "node": "Reprocessor Log", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reprocessor Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Emergency Reprocessor": {
-      "main": [[ { "node": "Load Emergency Item", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "Load Emergency Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Load Emergency Item": {
-      "main": [[ { "node": "IF Has Emergency Work", "type": "main", "index": 0 } ]]
+      "main": [
+        [
+          {
+            "node": "IF Has Emergency Work",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "IF Has Emergency Work": {
       "main": [
-        [ { "node": "Parse AI Decision", "type": "main", "index": 0 } ],
-        [ { "node": "Reprocessor Idle", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Parse AI Decision",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reprocessor Idle",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
@@ -672,7 +1173,11 @@
     "availableInMCP": true
   },
   "staticData": null,
-  "tags": ["bunker", "aoc", "v4"],
+  "tags": [
+    "bunker",
+    "aoc",
+    "v4"
+  ],
   "active": false,
   "versionId": "v4-enterprise",
   "meta": {

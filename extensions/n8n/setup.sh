@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-echo "🛡️ Levantando el orquestador n8n para MECO_Framework..."
+echo "🛡️ Levantando el orquestador n8n de Bunker OS..."
 
 if ! docker info >/dev/null 2>&1; then
   echo "❌ No se pudo conectar con Docker. Iniciá el daemon (por ejemplo: sudo systemctl start docker) y volvé a ejecutar este script." >&2

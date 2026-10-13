@@ -21,7 +21,7 @@ This policy covers:
 
 ## n8n workflow status and limitations
 
-- **Bunker AOC v4 Enterprise is inactive and experimental.** Its webhook workflow does not implement receiver authentication or source-based rate limiting. Do not activate it or expose it to a network until those controls are implemented and tested.
+- **Bunker AOC v4 Enterprise is inactive and experimental.** Its webhook workflow does not implement receiver authentication or source-based rate limiting. AI parsing failures now route to human review rather than auto-creating a standard issue. Do not activate it or expose it to a network until the missing ingress controls are implemented and tested.
 - **Bunker Ultimate Alerter is inactive.** The alert sender can sign requests with HMAC, but the reviewed receiver does not validate that signature. Sender-side signing alone does not authenticate a webhook.
 - **Bunker Health Check is a manual smoke workflow.** It returns a static status value; it does not monitor services or run on a schedule.
 - Do not expose n8n publicly. A reverse proxy alone does not replace authentication, request validation, or rate limiting.

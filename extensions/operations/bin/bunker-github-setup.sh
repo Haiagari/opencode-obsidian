@@ -1,23 +1,43 @@
-#!/bin/bash
-# bunker-github-setup.sh — Aplica la configuración de GitHub (About, Tags, Branch Protection)
+#!/usr/bin/env bash
+set -euo pipefail
 
-REPO="Haiagari/opencode-obsidian"
+# Updates repository description and topics only. Branch protection is managed
+# separately in GitHub Settings and is intentionally never changed here.
 
-echo "🚀 Configurando la identidad del repositorio en GitHub..."
-gh repo edit "$REPO" \
-  --description "Bunker OS (v3.0): Local-first Knowledge Operating System and Agentic Command Center." \
-  --homepage "https://opencode.ai" \
-  --add-topic "knowledge-graph,agentic-workflows,obsidian,n8n,bunker-os,local-first,cybersecurity"
+REPO="${BUNKER_GITHUB_REPO:-Haiagari/opencode-obsidian}"
+DESCRIPTION="Bunker OS: local-first personal knowledge workflow for an Obsidian vault."
+TOPICS=(obsidian personal-knowledge local-first opencode knowledge-management)
+MODE="${1:---dry-run}"
 
-echo "🔒 Aplicando reglas de protección a la rama 'main'..."
-gh api \
-  --method PUT \
-  -H "Accept: application/vnd.github+json" \
-  -H "X-GitHub-Api-Version: 2022-11-28" \
-  "/repos/$REPO/branches/main/protection" \
-  -f enforce_admins=false \
-  -f required_pull_request_reviews='{"dismiss_stale_reviews":true,"require_code_owner_reviews":false,"required_approving_review_count":1}' \
-  -f required_status_checks='{"strict":true,"contexts":[]}' \
-  -f restrictions=null
+case "$MODE" in
+  --dry-run)
+    ;;
+  --apply)
+    command -v gh >/dev/null 2>&1 || {
+      echo "Error: GitHub CLI (gh) is required for --apply." >&2
+      exit 1
+    }
+    ;;
+  *)
+    echo "Usage: $0 [--dry-run|--apply]" >&2
+    exit 2
+    ;;
+esac
 
-echo "✅ ¡Configuración de GitHub aplicada con éxito!"
+printf 'Repository: %s\n' "$REPO"
+printf 'Description: %s\n' "$DESCRIPTION"
+printf 'Topics: %s\n' "${TOPICS[*]}"
+echo "Branch protection: unchanged"
+
+if [[ "$MODE" == "--dry-run" ]]; then
+  echo "Dry run only. Re-run with --apply to update repository metadata."
+  exit 0
+fi
+
+args=(repo edit "$REPO" --description "$DESCRIPTION")
+for topic in "${TOPICS[@]}"; do
+  args+=(--add-topic "$topic")
+done
+
+gh "${args[@]}"
+echo "Repository metadata updated. Branch protection was not changed."
