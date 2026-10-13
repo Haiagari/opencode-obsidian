@@ -19,7 +19,9 @@ class OptionalExtensionBoundaryTests(unittest.TestCase):
         ingest = (ROOT / "bin/bunker-ingest.sh").read_text()
         self.assertIn('BUNKER_N8N_ALERTS:-0', ingest)
         self.assertIn('BUNKER_N8N_ALERTS=1', ingest)
-        self.assertIn('Ingestion completed; optional n8n alert failed.', ingest)
+        self.assertIn('Warning: source is staged, but the optional n8n alert failed.', ingest)
+        self.assertIn('This command only stages', ingest)
+        self.assertIn('URL ingestion is not supported by this CLI', ingest)
 
     def test_push_notifications_are_opt_in_and_nonfatal(self):
         push = (ROOT / "extensions/operations/bin/bunker-push.sh").read_text()
