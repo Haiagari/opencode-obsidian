@@ -1,4 +1,4 @@
-![opencode-obsidian — Bunker de conocimiento agéntico](wiki/meta/banner-opencode-obsidian.png)
+![opencode-obsidian · Bunker OS](docs/assets/banner-bunker-os.png)
 
 # opencode-obsidian · Bunker OS
 
@@ -60,6 +60,10 @@ Suppose you want to preserve a technical article and use it in a later decision:
 3. **Connect:** reuse existing concepts and entities, attach source references, and update the index.
 4. **Retrieve:** run `python3 scripts/retrieve.py build`, then search for the relevant terms.
 5. **Apply:** open the source notes, compare their evidence, and save the decision worth keeping.
+
+![Knowledge workflow: capture source material, distill it into connected notes, then retrieve it for later use](docs/diagrams/knowledge-workflow.png)
+
+*The workflow moves from captured source material through reviewed, connected knowledge to searchable notes for future decisions.*
 
 The staging command does not create wiki pages. The agent workflow performs the synthesis; the user reviews what becomes durable knowledge. The [daily guide](docs/usage-guide.md) walks through a reproducible example and explains how to resume work.
 
