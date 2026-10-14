@@ -1,5 +1,7 @@
 # The Evolving Software Development Landscape of 2026: A Comprehensive Briefing
 
+> Archived background research. This note is not product documentation for Bunker OS; verify its claims and sources before relying on it.
+
 ## Executive Summary
 
 As of early 2026, the software development industry has reached a pivotal inflection point characterized by the near-universal adoption of Artificial Intelligence (AI) in the development lifecycle, a phenomenon known as "vibe coding." Recent data indicates that 92% of U.S. developers now utilize AI coding tools daily. This shift has necessitated the emergence of new roles, such as the AI Engineer, and the standardization of integration protocols like the Model Context Protocol (MCP) to resolve the "NxM problem" of connecting disparate AI models with various data tools.

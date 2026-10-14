@@ -1,14 +1,18 @@
-# Bunker OS Install Guide
+# Install Bunker OS
 
-Bunker OS is a local-first knowledge workflow built around an Obsidian Markdown vault. OpenCode skills and scripts support capture, organization, and retrieval. Docker and n8n are optional.
+Bunker OS is an Obsidian vault that can be used on its own. OpenCode is optional; it adds the bundled skills and agent workflows.
 
-## Prerequisites
+## Requirements
 
-- [Git](https://git-scm.com/)
-- [Obsidian](https://obsidian.md/)
-- [OpenCode](https://opencode.ai/) (optional, for the bundled agent workflow)
+- Git, to get the repository
+- Obsidian, to open and edit the vault
+- OpenCode, only if you want to use the included agent workflows
 
-## Install as an Obsidian vault
+Python 3.10+, Go, and Docker are needed only for specific tools described in their reference guides.
+
+## Install the repository as a vault
+
+Clone the repository and run its setup script:
 
 ```bash
 git clone https://github.com/Haiagari/opencode-obsidian.git
@@ -16,48 +20,46 @@ cd opencode-obsidian
 bash bin/setup-vault.sh
 ```
 
-In Obsidian, choose **Manage Vaults → Open folder as vault** and select the cloned repository. Open the same repository in OpenCode to use its instructions, skills, and scripts.
+The script creates local vault folders and Obsidian settings. If the checked-in Excalidraw plugin manifest is present but its runtime is missing, setup downloads the pinned release and verifies its SHA-256 checksum.
 
-The setup script creates the local `.raw/` input folder and Obsidian vault configuration. If the bundled Excalidraw plugin is present but its runtime is missing, the script downloads the pinned v2.22.0 release and verifies its SHA-256 checksum. It does not install a Claude Code marketplace plugin.
+In Obsidian, choose **Manage Vaults → Open folder as vault** and select the cloned `opencode-obsidian` folder. To use the agent workflows, open that same folder in OpenCode and follow the repository's [`AGENTS.md`](../AGENTS.md) and [`WIKI.md`](../WIKI.md).
+
+The setup script currently prints some legacy Claude Code instructions at the end. They are not the setup path for this repository; use OpenCode as described above. The script does not install a Claude Code plugin.
 
 ## Use an existing vault
 
-The setup script accepts an alternate vault path:
+The script can create the basic vault folders in another location:
 
 ```bash
 bash /path/to/opencode-obsidian/bin/setup-vault.sh /path/to/your-vault
 ```
 
-This creates the basic Obsidian and wiki folders in the target vault. To use the bundled OpenCode workflow, open the cloned Bunker OS repository in OpenCode and follow its `AGENTS.md` and `WIKI.md` instructions. Review those files before copying or running repository scripts against a separate vault.
+Review `AGENTS.md` and `WIKI.md` before using the bundled workflows or scripts against a separate vault. They may create or update notes there.
 
-## First steps
+## Make your first note
 
-1. Open the vault in Obsidian and review `wiki/index.md`.
-2. Put a source document in `.raw/`.
-3. In OpenCode, ask it to ingest the file (for example, `ingest notes.md`). The workflow sanitizes untrusted input before organizing notes.
-4. Search the resulting wiki with the bundled retrieval tools or ask OpenCode about a topic.
-
-The exact number and type of notes created depends on the source and the ingestion task.
+Open the [daily use guide](usage-guide.md) for the capture, review, filing, and search workflow. It includes the commands for ingesting a local source and searching the vault.
 
 ## Privacy and Git
 
-The repository is public. New files in `.raw/` and `wiki/sources/` are ignored by Git, but some files in those folders are already tracked in public history. Git ignore rules do not make existing tracked files private. Check before adding sensitive information:
+This repository is public. Ignore rules only apply to new, untracked files; they do not encrypt files or erase content already present in Git history. Check tracked paths before adding private material:
 
 ```bash
 git ls-files .raw wiki/sources
+git status --short
 ```
 
-Never place credentials, private source documents, or personal notes in tracked files. Use `git status --short` before committing.
+Never put credentials, private source documents, or personal notes in tracked files. See [Security boundaries](security-boundaries.md) for the complete safeguards and limitations.
 
-## Optional extensions
+## Optional tools
 
-- **Local ingest API:** Optional loopback-only Go endpoint for authenticated short-note capture. See [Local Ingest API](local-ingest-api.md); it requires Go and a local token and does not replace the `wiki-ingest` workflow.
-- **n8n:** Optional workflows under `extensions/n8n/`. See [N8N-SETUP.md](N8N-SETUP.md). The AOC and alert webhook workflows are inactive prototypes; do not activate or expose them until their authentication and abuse controls are implemented and tested.
-- **Host and GitHub utilities:** Read [operations guidance](../extensions/operations/README.md) before running tools that affect your host or repositories.
+- [Local Ingest API](local-ingest-api.md) — authenticated, loopback-only capture for short notes.
+- [n8n extension](N8N-SETUP.md) — optional automation that requires Docker.
+- [Operations tools](../extensions/operations/README.md) — host and repository utilities; read their guidance before running them.
 
-## Validation
+## Validate the repository
 
-Run the repository checks from its root:
+Run checks from the repository root when contributing:
 
 ```bash
 make test-core
@@ -65,5 +67,4 @@ make test-extensions
 make test
 ```
 
-YAML checks require PyYAML. The GitHub Actions workflow installs this dependency before running the suite.
-
+See [CONTRIBUTING](../CONTRIBUTING.md) for the contribution workflow.

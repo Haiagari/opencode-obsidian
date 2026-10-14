@@ -12,7 +12,7 @@
 | Review privacy exposure | Enumerated tracked `.raw/` and `wiki/sources/` content; scanned reachable text blobs in this branch's Git history for high-signal credential formats; removed two plugin `data.json` files from the current Git tree and strengthened ignore rules. |
 | Decide n8n scope | Keep n8n optional. Keep the AOC and alert webhook workflows inactive. CI now rejects an active workflow containing a webhook trigger. The manual Health Check remains active and returns static status only. |
 | Add end-to-end tests | Added a local-only lifecycle test covering sanitized capture, atomic wiki writes, retrieval indexing, archiving, commit, and push to a temporary bare Git remote. Added HTTP-handler tests without opening a network listener. Added mocked operation tests for dry-run and archive-branch behavior. |
-| Align guides with behavior | Updated README, PROJECT, AGENTS, SECURITY, installation and operations guides, security boundaries, and this report. Added a dedicated local API guide and organized documentation into a task-based hub. Replaced four repetitive illustrations with two coordinated, generated visual assets; exact flows are documented in text and Mermaid. Corrected sanitizer claims and documented the remaining limits. |
+| Align guides with behavior | Updated README, PROJECT, AGENTS, SECURITY, installation and operations guides, security boundaries, and this report. Added a dedicated local API guide and organized documentation around setup, daily use, and technical references. Replaced four repetitive illustrations with two coordinated visual assets; component roles and data paths are described in the architecture and usage guides. Corrected sanitizer claims and documented the remaining limits. |
 
 ## Findings fixed
 

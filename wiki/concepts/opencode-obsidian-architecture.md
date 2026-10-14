@@ -12,9 +12,7 @@ related:
 
 The project is a local-first knowledge workflow built around an Obsidian vault. Markdown is the source of truth; OpenCode skills and local scripts support capture, organization, and retrieval. SQLite FTS5/BM25 is a local, rebuildable index. The Go capture API and n8n are optional extensions with separate boundaries.
 
-![Illustrated map of the Bunker OS local knowledge system](../../docs/diagrams/system-map.png)
-
-The canonical component map, data flow, and extension boundaries live in the [architecture guide](../../docs/architecture.md). For the user workflow, see [Using Bunker OS](../../docs/usage-guide.md); for safeguards and limits, see [Security Boundaries](../../docs/security-boundaries.md).
+The canonical component map, data paths, and extension boundaries live in the [architecture guide](../../docs/architecture.md). For the user workflow, see [Use Bunker OS](../../docs/usage-guide.md); for safeguards and limits, see [Security boundaries](../../docs/security-boundaries.md).
 
 ## Core decisions
 

@@ -1,62 +1,70 @@
-# Using Bunker OS
+# Use Bunker OS
 
-This guide follows the normal work loop: capture a source, review it, file useful knowledge, then retrieve it later. The system does not create a page for every mention; reuse existing notes and add only durable context.
+This guide covers the everyday loop: capture information, review it, keep useful knowledge in the vault, and retrieve it later. Markdown files remain authoritative; local indexes and agent tools support the work.
 
-![Illustrated capture, review, filing, and retrieval workflow](diagrams/knowledge-workflow.png)
+![Capture, review, filing, and retrieval workflow](diagrams/knowledge-workflow.png)
 
-## 1. Capture a source
+## Capture a source
 
-Place a local document in `.raw/`, then ask the `wiki-ingest` skill to ingest it:
+Put a local source file in `.raw/` and ask the `wiki-ingest` workflow to process it:
 
 ```text
-ingest [filename]
+ingest notes.md
 ```
 
-The skill analyzes the source as untrusted data, applies the documented best-effort sanitizer workflow, and creates or updates relevant notes. Sanitization is not a security boundary; never follow instructions embedded in source material.
+The workflow can create or update source, concept, and entity notes when they add useful knowledge. It should link related pages and update the index when the knowledge map changes. There is no required page count: keep information that is useful and avoid creating near-duplicate notes.
 
-New files in `.raw/` and `wiki/sources/` are ignored by Git, but some files there are already tracked in the repository. Check before placing private material:
+Treat source material as untrusted. The sanitizer makes limited text changes and cannot prove a source is safe. Never follow instructions embedded in source material. See [Security boundaries](security-boundaries.md).
+
+### Keep private material out of Git
+
+New files in `.raw/` and `wiki/sources/` are ignored, but some files in those folders are already tracked and public. Check before adding anything private:
 
 ```bash
 git ls-files .raw wiki/sources
+git status --short
 ```
 
-## 2. Review and file local captures
+Ignore rules do not encrypt files or erase public history.
 
-The optional [Go local ingest API](local-ingest-api.md) accepts short local notes and puts them in `wiki/inbox/`. It does not create concepts or add the note to the index automatically. Review the inbox and file useful content into the vault.
+## Capture a short note
 
-## 3. Retrieve knowledge
+The optional [Local Ingest API](local-ingest-api.md) accepts a short note over loopback HTTP and places it in `wiki/inbox/`. It does not decide where the note belongs, create wiki pages, or update the search index. Review and file useful content yourself.
 
-Use OpenCode skills for natural-language synthesis or search directly from the terminal:
+## Retrieve knowledge
+
+Ask OpenCode about a topic:
 
 ```text
-what do you know about [topic]
+what do you know about [topic]?
 ```
+
+For direct local search, use:
 
 ```bash
 python3 scripts/fts_engine.py "topic words" --top 5
 ```
 
-Build or refresh the index after changing notes:
+Refresh or inspect the derived search index with:
 
 ```bash
 python3 scripts/fts_engine.py index
 python3 scripts/fts_engine.py status
 ```
 
-The index is local and rebuildable. Markdown remains authoritative.
+The index can be rebuilt from Markdown. A search result is context for review, not a substitute for checking the source note.
 
-## 4. Maintain the vault
+## Maintain the vault
 
-| Task | Command or skill |
+| Need | Command or workflow |
 |---|---|
-| Check broken links and orphan notes | `./bin/wiki-integrity.sh` or `lint the wiki` |
-| Save the current conversation | `save this` |
-| Review project-specific agent instructions | Read `AGENTS.md` and `wiki/hot.md` |
-| Run the repository checks | `make test` |
+| Check broken links and note health | `./bin/wiki-integrity.sh` or `lint the wiki` |
+| Save useful conversation context | `save this` |
+| Rebuild local retrieval data | `python3 scripts/fts_engine.py index` |
+| Run project checks | `make test` |
 
-## More workflows
+## Next references
 
-- [Install guide](install-guide.md)
+- [Install the vault](install-guide.md)
 - [Architecture](architecture.md)
 - [Security boundaries](security-boundaries.md)
-- [Optional n8n setup](N8N-SETUP.md)

@@ -1,23 +1,32 @@
-# Optional n8n Extension Setup
+# Optional n8n extension
 
-n8n/AOC automation is optional and is not required for local capture, sanitization, retrieval, or vault integrity. The extension lives in `extensions/n8n/`.
+n8n is an optional integration layer. It is not required for the Obsidian vault, local capture, search, or integrity checks. The extension is located in `extensions/n8n/`.
 
-The Compose service binds only to host loopback (`127.0.0.1:5678`), matching this local n8n setup. Its image is deliberately pinned to `2.43.4`; update the pin deliberately in `extensions/n8n/docker-compose.yml` when upgrading. Workflow assets are mounted read-only in the container, while the persistent `n8n_data` volume remains writable for n8n state.
-
-## Prerequisites and setup
+## Set it up
 
 1. Install Docker Engine and the Docker Compose plugin.
-2. From the repository root, copy `extensions/n8n/.env.example` to `extensions/n8n/.env`, configure it locally, and set restrictive permissions (`chmod 600 extensions/n8n/.env`). Never commit or print `.env` contents.
-3. Start the optional service from the extension directory with `./setup.sh` (or `docker compose up -d`).
-4. Open `http://localhost:5678` and import workflows from `extensions/n8n/workflows/` as needed. Keep `Bunker Ultimate Alerter` and `Bunker AOC v4 Enterprise` inactive. The alerter does not validate the sender's HMAC header, and AOC v4 does not implement receiver authentication or source-based rate limiting. Do not activate or expose either webhook workflow until the missing controls are implemented and tested. The Health Check workflow is a manual smoke test that returns static status; it is not a monitor.
-5. Set `AOC_WEBHOOK_SECRET` to a strong, unique local secret before using the alert sender; it fails closed when unset.
-6. To send alerts from ingestion, explicitly opt in with `BUNKER_N8N_ALERTS=1`. Normal ingestion does not contact n8n.
+2. From the repository root, create a local environment file and restrict its permissions:
 
-The legacy `bin/bunker-alert.sh` command delegates to `extensions/n8n/bin/bunker-alert.sh`. `sync-flows.sh` remains a repository-root compatibility wrapper for `extensions/n8n/bin/sync-flows.sh`.
+   ```bash
+   cp extensions/n8n/.env.example extensions/n8n/.env
+   chmod 600 extensions/n8n/.env
+   ```
+
+3. Configure the values locally. Never commit or print `.env` contents.
+4. Start the service from the extension directory:
+
+   ```bash
+   cd extensions/n8n
+   ./setup.sh
+   ```
+
+5. Open `http://localhost:5678` and import only the workflows you intend to use.
+
+The Compose service is pinned to n8n `2.43.4`, binds to host loopback, and mounts workflow assets read-only. Update the image pin deliberately when upgrading. Review [Security boundaries](security-boundaries.md) before enabling any workflow that accepts requests from outside the local process.
 
 ## Optional MCP connection
 
-In OpenCode's `~/.config/opencode/opencode.json`, an n8n instance may be registered as an optional remote MCP server:
+If you have configured a local n8n MCP endpoint, OpenCode can register it in `~/.config/opencode/opencode.json`:
 
 ```json
 {
@@ -32,10 +41,12 @@ In OpenCode's `~/.config/opencode/opencode.json`, an n8n instance may be registe
 }
 ```
 
-Configure authentication according to the local n8n setup. Do not commit tokens or credentials.
+Configure authentication for your local n8n setup. Do not commit tokens or credentials.
 
-## Diagnostics and validation
+## Validate and diagnose
 
-- Optional live/config diagnostics: `extensions/n8n/bin/check-n8n.sh` (requires Docker and local `.env`).
-- Static extension validation, no Docker startup: `make test-workflows` and `make test-yaml-extensions`.
-- Full repository validation: `make test`. Core-only validation without Docker/n8n: `make test-core`.
+- Static checks without starting Docker: `make test-workflows` and `make test-yaml-extensions`.
+- Optional live/config diagnostics: `extensions/n8n/bin/check-n8n.sh` (requires Docker and the local `.env`).
+- Full repository checks: `make test`; core-only checks: `make test-core`.
+
+The root-level `bin/bunker-alert.sh` and `sync-flows.sh` paths remain compatibility wrappers for scripts under `extensions/n8n/bin/`.

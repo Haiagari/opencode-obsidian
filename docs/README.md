@@ -1,34 +1,27 @@
 # Documentation
 
-Bunker OS is a local-first knowledge workflow for an Obsidian vault. Use this guide to find the right document without reading the repository from top to bottom.
+Choose a path based on what you need to do. The installation and daily-use guides are the main entry points; the remaining pages are reference material.
 
-## Start here
+## Set up and use the vault
 
-| If you want to… | Read |
-|---|---|
-| Install the vault and make your first note | [Install guide](install-guide.md) |
-| Learn the everyday capture, filing, and search workflow | [Using Bunker OS](usage-guide.md) |
-| Understand components, data flow, and system boundaries | [Architecture](architecture.md) |
-| Review the security model and its limits | [Security boundaries](security-boundaries.md) |
+1. [Install the vault](install-guide.md) in Obsidian and, optionally, configure OpenCode.
+2. [Use Bunker OS](usage-guide.md) to capture, review, organize, and retrieve knowledge.
 
-## Reference
+## Understand the system
 
-| Area | Document | What it covers |
-|---|---|---|
-| Local capture | [Local Ingest API](local-ingest-api.md) | Authenticated loopback endpoint; writes to a review inbox only |
-| Optional automation | [n8n setup](N8N-SETUP.md) | Local setup and validation for the separate extension |
-| Product scope | [Product direction](product-direction.md) | Principles, current scope, and staged priorities |
-| Audit record | [Repository audit](repository-audit.md) | Findings reviewed, fixes, evidence, and remaining limits |
-| Visual guide | [System visuals](diagrams/README.md) | The two illustrations used by the documentation |
+- [Architecture](architecture.md) explains the local components and where optional services fit.
+- [Security boundaries](security-boundaries.md) describes actual safeguards, limitations, and safe operating practices.
 
-## Contributing and governance
+## Optional tools
 
-- [Project overview](../PROJECT.md)
-- [Agent instructions](../AGENTS.md)
-- [Bunker rules](../BUNKER_RULES.md)
-- [Security reporting](../SECURITY.md)
-- [Contribution guide](../CONTRIBUTING.md)
+- [Local Ingest API](local-ingest-api.md) — authenticated loopback capture into a review inbox.
+- [n8n extension](N8N-SETUP.md) — optional automation setup and validation.
 
-## Reading order
+## Project references
 
-For a first-time user: **install → use → understand architecture → review security**. The detailed audit is a project record, not a setup manual.
+- [Product direction](product-direction.md) — product scope and principles.
+- [Repository audit](repository-audit.md) — findings, evidence, completed fixes, and open maintenance items.
+- [Release record](releases/v1.3.0-local-knowledge-os.md) — the v1.3.0 delivery summary.
+- [Archived industry briefing](archive/BUNKER-v2.3-BRIEFING.md) — background research, not Bunker OS product guidance.
+
+For repository contribution and operating rules, see [CONTRIBUTING](../CONTRIBUTING.md), [AGENTS](../AGENTS.md), and [SECURITY](../SECURITY.md).
