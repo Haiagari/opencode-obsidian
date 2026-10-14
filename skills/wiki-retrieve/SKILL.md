@@ -96,9 +96,9 @@ python3 scripts/retrieve.py build
 python3 scripts/retrieve.py status
 ```
 
-The build is incremental-aware but rebuilds fully from source files.
-It's fast (pure Python, no network calls). Run it before heavy
-search sessions.
+The build updates changed/new pages, skips unchanged pages, and removes deleted
+page entries. It uses local Python and SQLite without network calls. Refresh
+after filing or editing notes before relying on search results.
 
 ---
 
@@ -117,10 +117,10 @@ search sessions.
 ## Why BM25-only?
 
 - **Zero dependencies**: stdlib Python, no numpy, no ollama, no API keys
-- **Fast**: builds and queries in under a second for typical vaults
+- **Local**: index/query time depends on vault size and hardware; no hosted search service is required
 - **Deterministic**: same query = same results, every time
 - **OpenCode does the synthesis**: the agent reads the chunks and
   applies its own model (Anthropic, OpenAI, local — whatever the user
   configured in OpenCode) to understand and answer
 - **Portable**: works in CI, air-gapped environments, anywhere with
-  Python 3.10+
+  Python 3.10+ with SQLite FTS5 support
