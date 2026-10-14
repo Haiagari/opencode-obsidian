@@ -22,21 +22,14 @@ The agent (OpenCode) is the only intelligence in the loop.
 
 ## Architecture
 
-```
-QUERY:
-  query string
-       │
-       ▼
-  python3 scripts/retrieve.py "<query>" --top 5
-       │
-       ├─ bm25-index.py (pure Python, stdlib only)
-       │     tokenize → BM25 scoring → ranked results
-       │
-       └─ returns top-N with: path, score, preview
-       │
-       ▼
-  OpenCode reads the pages and synthesizes the answer
-```
+The CLI `scripts/retrieve.py` calls `scripts/fts_engine.py`, which indexes
+eligible wiki Markdown in SQLite FTS5 and returns passages ranked with native
+BM25. OpenCode reads the selected notes and synthesizes an answer.
+
+The index is incremental, derived, and rebuildable. `meta/` and `archive/`
+descendants are excluded; inbox Markdown is eligible and still needs review.
+See [Architecture](../../docs/architecture.md#retrieval-internals) for storage,
+selection, chunking, and ranking limits.
 
 The index is built offline from wiki Markdown files. Each page is
 split into chunks (~500 tokens each) at paragraph boundaries. The
@@ -64,7 +57,7 @@ or the legacy hot → index → drill read order.
 | Operation | Command | Description |
 |-----------|---------|-------------|
 | **Search** | `python3 scripts/retrieve.py "query" --top 5` | BM25 ranked results |
-| **Build** | `python3 scripts/retrieve.py build` | Rebuild index from scratch |
+| **Build** | `python3 scripts/retrieve.py build` | Build or incrementally update the index |
 | **Status** | `python3 scripts/retrieve.py status` | Index stats |
 
 ### Flags
@@ -103,9 +96,9 @@ python3 scripts/retrieve.py build
 python3 scripts/retrieve.py status
 ```
 
-The build is incremental-aware but rebuilds fully from source files.
-It's fast (pure Python, no network calls). Run it before heavy
-search sessions.
+The build updates changed/new pages, skips unchanged pages, and removes deleted
+page entries. It uses local Python and SQLite without network calls. Refresh
+after filing or editing notes before relying on search results.
 
 ---
 
@@ -124,10 +117,10 @@ search sessions.
 ## Why BM25-only?
 
 - **Zero dependencies**: stdlib Python, no numpy, no ollama, no API keys
-- **Fast**: builds and queries in under a second for typical vaults
+- **Local**: index/query time depends on vault size and hardware; no hosted search service is required
 - **Deterministic**: same query = same results, every time
 - **OpenCode does the synthesis**: the agent reads the chunks and
   applies its own model (Anthropic, OpenAI, local — whatever the user
   configured in OpenCode) to understand and answer
 - **Portable**: works in CI, air-gapped environments, anywhere with
-  Python 3.10+
+  Python 3.10+ with SQLite FTS5 support

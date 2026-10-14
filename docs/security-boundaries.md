@@ -25,12 +25,18 @@ The optional n8n extension is a separate integration boundary. Its Compose servi
 | Runtime vault state | FTS database, integrity/evidence/lint reports, ingestion logs, inbox notes, and lock files are ignored by Git | Recheck ignore rules before publishing new operational outputs |
 | Obsidian Local REST API | Community plugin is enabled; bundled defaults bind to `127.0.0.1`, use HTTPS, and disable insecure HTTP | Local `data.json` may hold API keys/certificates and is ignored; confirm the local settings after enabling the plugin |
 | Local hooks | Hooks can load context and prompt for a handover | Local hooks can be skipped or changed; they are not server enforcement |
-| FTS index | SQLite index is stored under ignored `.vault-meta/` | Vault files remain the source of truth; rebuild the index if it is stale |
+| FTS index | SQLite index is stored under ignored `.vault-meta/`; `meta/` and `archive/` descendants are excluded, inbox Markdown is eligible | Vault files remain authoritative; retrieved inbox notes are not automatically reviewed |
 | Concurrent writes | POSIX file locking and atomic replacement | Not a distributed lock and not a guarantee on every network filesystem |
 | n8n network | Compose publishes port 5678 on host loopback | Other local processes can still reach it |
 | AOC v4 workflow | Inactive; invalid AI output routes to human review | No webhook receiver authentication or source rate limiting; do not activate |
 | Alert workflow | Inactive; sender can sign outbound requests | Receiver does not validate that signature; do not expose or rely on it for authentication |
 | Health Check | Manual trigger returning static status | Not a service monitor or scheduled health check |
+
+## Provider and review boundary
+
+Local retrieval does not call an external model. OpenCode ingestion/synthesis may send source or note context to the model provider configured by the user. Local file storage therefore does not imply that every agent operation stays on the machine. Review provider settings and source sensitivity before requesting model-assisted work.
+
+The Go memo API assigns types by keywords and stores inbox notes; it does not certify their claims. Default search can include inbox Markdown. Follow provenance and review status rather than treating ranking as approval.
 
 ## Operational rules
 
@@ -43,8 +49,7 @@ The optional n8n extension is a separate integration boundary. Its Compose servi
 
 ## Next security work
 
-- Implement and integration-test authentication, payload limits, and rate limiting before enabling webhook receivers.
-- Keep n8n webhook workflows inactive until receiver authentication, payload validation, and rate limiting are implemented and tested; static tests enforce this boundary.
+- Implement and integration-test receiver authentication, payload validation/limits, and rate limiting before enabling n8n webhook workflows; static tests currently enforce their inactive state.
 - Evaluate sanitizer coverage against an adversarial corpus; avoid claiming that regex rewrites prevent prompt injection.
 - A high-signal credential-pattern scan covered 946 text blobs reachable from this branch's Git history and found no matches. It skipped 16 binary blobs and is not a replacement for a dedicated secret-scanning tool.
 

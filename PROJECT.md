@@ -36,7 +36,7 @@ Governance    → BUNKER_RULES, ADR template, knowledge supply chain
 Optional ops  → extensions/operations/ (legacy bin/ shims); n8n in extensions/n8n/ (not core workflow)
 Retrieval     → SQLite FTS5 Engine (fts_engine.py, WAL mode, incremental SHA256) + BM25 ranking
 Testing       → make test-core (Docker-independent) + make test-extensions; make test runs both
-Agent Runtime → agents, commands, skills (13), hooks (7)
+Agent Runtime → agents, commands, skills (13), hook lifecycle configuration
 Visualization → dashboard, canvases, Obsidian graph
 ```
 
@@ -138,7 +138,7 @@ n8n can support asynchronous workflows and integrations, but it is not required 
 | Evidence indexing | `./bin/evidence-index.sh` |
 | Atomic lock & write | `./bin/vault-lock.sh append wiki/log.md "entry"` |
 | Signed webhook alert | `./bin/bunker-alert.sh target info "msg"` |
-| SQLite FTS5 search | `python3 scripts/fts_engine.py "query"` |
+| SQLite FTS5 search | `python3 scripts/retrieve.py "query"` |
 | Pre-ingest sanitizer | `python3 scripts/sanitize_ingest.py [file]` |
 | Optional local HTTP capture | `docs/local-ingest-api.md` (loopback only, token required) |
 | Full local check | `./bin/bunker-check.sh` |
