@@ -1,74 +1,71 @@
 # Contributing to Bunker OS
 
-PRs welcome. Please read this before opening one.
+[Project overview](README.md) · [Documentation](docs/README.md) · [Security reporting](SECURITY.md)
 
----
+Start from `main` and keep changes focused on the local knowledge workflow or a clearly scoped optional extension. Read `AGENTS.md` for repository operating rules; read `docs/security-boundaries.md` before changing capture or integration behavior.
 
-## Prerequisites
+## Development environment
 
-| Dependency | Required for | Notes |
-|------------|-------------|-------|
-| Python 3.10+ | BM25 index, retrieve scripts | stdlib only — no pip deps needed |
-| Go 1.22+ | `ingest_server.go` | Optional |
-| Docker | n8n workflow testing | Optional |
-| ollama (if needed) | OpenCode local inference | Not related to retrieval |
-| OpenCode | Running skills | Required |
-| ECC skill bundle | code-review, security-review, etc. | `~/.config/opencode/skills/`
+| Dependency | Why it is needed |
+|---|---|
+| Git and Bash | Repository checks and shell fixtures |
+| Python 3.10+ with SQLite FTS5 | Retrieval, locking, sanitizer, and lifecycle tests |
+| PyYAML | CI and Compose YAML validation |
+| Go 1.22+ | Optional API build/handler tests invoked by regression checks |
+| POSIX environment | `fcntl` locks and shell tests; use WSL on Windows |
 
-Some skills listed in the README (`code-review`, `security-review`, `infra-design`, etc.) are provided by the ECC global skill bundle, not bundled in this repo. Install them separately. All repo-bundled skills are under `skills/`.<｜end▁of▁thinking｜>
-
----
-
-## Workflow
-
-1. Fork the repo and create a branch from `main`
-2. Make your changes
-3. Run `make test` — all suites must pass
-4. If you changed skills, update corresponding tests
-5. Commit with descriptive message (conventional commits)
-6. Open a PR to `main`
-
-## Commit Conventions
-
-Use [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-feat: add /autoresearch skill
-fix: fix Dead Letter Queue connection
-docs: update README with comparison table
-test: add n8n workflow tests
-chore: update docker-compose
-```
-
-## Self-Review Checklist
-
-Before requesting review:
-
-- [ ] `make test` passes (430 tests, 0 failures)
-- [ ] If you changed skills: did you update SKILL.md?
-- [ ] If you changed scripts: did you update tests?
-- [ ] If you changed structure: did you update README / PROJECT / WIKI?
-- [ ] No hardcoded secrets
-- [ ] Changes are backwards-compatible or documented
-
-## Tests
-
-All PRs must pass `make test`. CI verifies this automatically.
+Docker, n8n credentials, a model provider, and OpenCode are not required to run the local regression suite. They are required only when exercising their respective live integrations. External ECC skill bundles are optional and are not supplied by this repository.
 
 ```bash
+python3 -m venv /path/to/bunker-dev-venv
+source /path/to/bunker-dev-venv/bin/activate
+python3 -m pip install PyYAML
 make test
 ```
 
-## Reporting Issues
+## Change workflow
 
-Use GitHub Issues for:
-- Bugs in skills or scripts
-- n8n workflow failures
-- Missing or incorrect documentation
-- Feature suggestions
+1. Create a branch from current `main`.
+2. Implement the change and update the guide/reference describing its behavior.
+3. Run the checks relevant to the changed component and the required `make test` gate.
+4. Review the diff and staged paths for unintended files or private content.
+5. Commit a descriptive change and open a PR to `main` with evidence and limitations.
 
-Include:
-- Bunker OS version (see `PROJECT.md`)
-- OpenCode version
-- Steps to reproduce
-- Relevant error logs
+Use conventional commit messages such as `fix: preserve existing staged sources`, `docs: explain retrieval boundaries`, or `test: cover duplicate inbox capture`.
+
+## Validation
+
+| Command | Covers |
+|---|---|
+| `make test-core` | YAML, wiki/scripts, retrieval, Python and local lifecycle checks |
+| `make test-extensions` | n8n JSON connections and Compose YAML |
+| `make test` | Both groups; required by CI |
+| `go test bin/ingest_server.go bin/ingest_server_test.go` | Go handlers and configuration without a listener |
+
+Use current test output rather than a fixed count copied from older releases. Tests validate local behavior and static assets; they do not certify live n8n credentials, provider availability, every OpenCode configuration schema, or semantic accuracy of generated notes.
+
+### Documentation changes
+
+Check local links, anchors, image paths/case, and rendering. Use the existing visual assets under `docs/diagrams/` and `wiki/meta/`; keep implementation claims tied to inspected code. Reference guides should have one canonical owner instead of copying entire contracts into several pages. Historical records should remain clearly labeled.
+
+### Skills and script changes
+
+Update `SKILL.md` when the user workflow changes. Add or adjust tests when behavior changes; explain any new writes, network requests, credentials, or publication effects. Keep staging, filing, indexing, and publishing distinct in documentation.
+
+## Before opening the PR
+
+- `make test` passes, with any skipped/dependent behavior disclosed.
+- Guides and references describe the actual changed behavior.
+- No credentials, private source documents, generated local state, or unintended assets are staged.
+- Breaking behavior or setup changes have a migration note.
+- The PR describes what changed, how it was checked, and what remains outside the validation.
+
+```bash
+git status --short
+git diff --check
+git diff --cached
+```
+
+## Reporting bugs
+
+Include the branch/commit, OS, relevant tool versions, reproduction commands, expected behavior, and actual output. Use harmless sample input and remove credentials/private notes. For vulnerabilities, follow [SECURITY](SECURITY.md) instead of posting sensitive details in a public issue.

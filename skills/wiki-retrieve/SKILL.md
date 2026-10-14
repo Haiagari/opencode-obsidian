@@ -22,21 +22,14 @@ The agent (OpenCode) is the only intelligence in the loop.
 
 ## Architecture
 
-```
-QUERY:
-  query string
-       │
-       ▼
-  python3 scripts/retrieve.py "<query>" --top 5
-       │
-       ├─ bm25-index.py (pure Python, stdlib only)
-       │     tokenize → BM25 scoring → ranked results
-       │
-       └─ returns top-N with: path, score, preview
-       │
-       ▼
-  OpenCode reads the pages and synthesizes the answer
-```
+The CLI `scripts/retrieve.py` calls `scripts/fts_engine.py`, which indexes
+eligible wiki Markdown in SQLite FTS5 and returns passages ranked with native
+BM25. OpenCode reads the selected notes and synthesizes an answer.
+
+The index is incremental, derived, and rebuildable. `meta/` and `archive/`
+descendants are excluded; inbox Markdown is eligible and still needs review.
+See [Architecture](../../docs/architecture.md#retrieval-internals) for storage,
+selection, chunking, and ranking limits.
 
 The index is built offline from wiki Markdown files. Each page is
 split into chunks (~500 tokens each) at paragraph boundaries. The
@@ -64,7 +57,7 @@ or the legacy hot → index → drill read order.
 | Operation | Command | Description |
 |-----------|---------|-------------|
 | **Search** | `python3 scripts/retrieve.py "query" --top 5` | BM25 ranked results |
-| **Build** | `python3 scripts/retrieve.py build` | Rebuild index from scratch |
+| **Build** | `python3 scripts/retrieve.py build` | Build or incrementally update the index |
 | **Status** | `python3 scripts/retrieve.py status` | Index stats |
 
 ### Flags

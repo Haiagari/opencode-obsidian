@@ -1,27 +1,53 @@
 # Product direction
 
-Bunker OS is a local-first personal knowledge workflow built around an Obsidian vault. Its main job is to help a person keep useful knowledge in portable Markdown and retrieve it later. The product's center is the vault, not its optional automation or agent integrations.
+[Documentation](README.md) · [Current architecture](architecture.md) · [Repository audit](repository-audit.md)
 
-## Principles
+Bunker OS serves a person who wants useful knowledge to survive beyond a chat, browser tab, or working session. The central artifact is an inspectable Markdown vault; local tools and agent workflows make capture, synthesis, retrieval, and continuity easier.
 
-- **Local-first:** the knowledge base remains a folder of files the user can inspect and back up.
-- **Useful without services:** capture, organization, search, and vault maintenance do not require n8n or a hosted service.
-- **Portable and inspectable:** Markdown is authoritative; the derived search index can be rebuilt.
-- **Honest about guarantees:** scripts and agent instructions provide bounded safeguards, not a sandbox or complete security enforcement.
-- **Selective automation:** add automation only when it makes the core knowledge loop more reliable or easier to use.
+## Intended use
 
-## Current scope
+| Situation | Useful outcome |
+|---|---|
+| Learning a technical topic | Source-linked concepts that can be revisited and compared |
+| Working on a project over several sessions | Decisions, context, and next steps that do not depend on chat history |
+| Collecting articles and notes | Selective filing with provenance rather than a growing unreviewed pile |
+| Preparing a decision | Retrieved evidence, visible uncertainty, and documented rationale |
 
-The working product includes the Obsidian vault, OpenCode workflows, local capture and sanitization tools, wiki integrity checks, and local BM25/SQLite FTS5 retrieval. The Go Local Ingest API and n8n workflows are optional. Some n8n webhook workflows remain inactive; see [Security boundaries](security-boundaries.md) for their status and limits.
+The current system is a personal workspace, not a hosted multi-user knowledge platform or an enforced enterprise security gate. The existing banner illustrates a broader ecosystem; a React dashboard/OZY service is not implemented in this repository.
 
-## Out of scope
+## Design principles
 
-Bunker OS is not a hosted knowledge service, an enterprise data-loss-prevention system, or a general automation platform. Its current controls do not make those claims.
+- **Portable knowledge:** Markdown remains readable and editable without a service.
+- **Derived search:** indexes support the vault and can be rebuilt from files.
+- **Selective filing:** reuse existing concepts and create pages when they add durable value.
+- **Reviewable automation:** distinguish collected input, reviewed notes, agent inference, and published content.
+- **Local independence:** core capture/search/maintenance do not require n8n. Model-assisted synthesis follows the configured provider's data boundary.
+- **Evidence-based claims:** document actual behavior and test limits instead of assigning unsupported security or production guarantees.
 
-## Priorities
+## Capability maturity
 
-1. Keep setup and everyday vault use understandable.
-2. Improve reliable capture, organization, context preservation, and retrieval.
-3. Add integrations selectively while keeping the local workflow independent.
+| Area | Current implementation | Boundary |
+|---|---|---|
+| Vault | Markdown, links, templates, visual assets | User-curated; tracked content is public |
+| Local retrieval | Incremental SQLite FTS5/BM25 | Lexical matching; no semantic confidence judgment |
+| Source staging | Sanitized copy, no overwrite | Not automatic wiki synthesis |
+| Agent workflows | Bundled ingest/query/save/research skills | Runtime/tool compatibility and output need review |
+| File coordination | POSIX advisory locks and atomic replacement | Cooperating local writers only |
+| Local memo API | Token, loopback, limits, inbox writes | No remote-service contract or rate limiter |
+| n8n | Optional Compose/workflow assets | Webhook receivers inactive; live integrations incomplete |
 
-For tasks and setup, start at the [documentation index](README.md). For components and data paths, see [Architecture](architecture.md). The detailed [repository audit](repository-audit.md) records implementation evidence and remaining maintenance work.
+## Improvement priorities and completion criteria
+
+| Priority | Completion should demonstrate |
+|---|---|
+| Clear onboarding | A clean clone reaches a verified first note and search result, with setup effects documented |
+| Reliable continuity | A resumed session can recover facts/decisions from explicit notes and context, without assuming hooks ran |
+| Better retrieval UX | Selection rules and stale-index behavior are visible; users can open supporting source notes |
+| Safer filing | Provenance, duplicates, and contradictions can be reviewed before knowledge is published |
+| Optional webhook readiness | Authentication, validation, payload/abuse limits, and negative integration tests precede activation |
+
+These are acceptance criteria, not delivery promises or completed features. The [repository audit](repository-audit.md) preserves review findings; the [security reference](security-boundaries.md) owns the current control limits.
+
+## Evaluate progress with real tasks
+
+Verify the complete source-to-note-to-query loop, resuming a project after losing chat context, and recovering the index from Markdown. Track incorrect filing, unsupported answers, duplicate notes, and setup friction alongside successful checks. A large number of notes or a passing static workflow test alone does not demonstrate a useful product.
