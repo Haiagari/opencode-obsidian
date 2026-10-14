@@ -2,6 +2,7 @@
 """Regression checks for core independence from optional extensions."""
 import unittest
 from pathlib import Path
+import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -19,7 +20,9 @@ class OptionalExtensionBoundaryTests(unittest.TestCase):
         ingest = (ROOT / "bin/bunker-ingest.sh").read_text()
         self.assertIn('BUNKER_N8N_ALERTS:-0', ingest)
         self.assertIn('BUNKER_N8N_ALERTS=1', ingest)
-        self.assertIn('Ingestion completed; optional n8n alert failed.', ingest)
+        self.assertIn('Warning: source is staged, but the optional n8n alert failed.', ingest)
+        self.assertIn('This command only stages', ingest)
+        self.assertIn('URL ingestion is not supported by this CLI', ingest)
 
     def test_push_notifications_are_opt_in_and_nonfatal(self):
         push = (ROOT / "extensions/operations/bin/bunker-push.sh").read_text()
@@ -67,6 +70,38 @@ class OptionalExtensionBoundaryTests(unittest.TestCase):
         self.assertIn("./workflows:/data/workflows:ro", compose)
         self.assertIn("n8n_data:/home/node/.n8n", compose)
         self.assertNotIn("n8n_data:/home/node/.n8n:ro", compose)
+
+    def test_bunker_check_generates_optional_evidence_and_rejects_plugin_state(self):
+        check = (ROOT / "bin/bunker-check.sh").read_text()
+        self.assertIn('./bin/evidence-index.sh', check)
+        self.assertIn(".obsidian/plugins/*/data.json", check)
+
+    def test_local_rest_api_example_keeps_http_disabled_and_has_no_real_key(self):
+        import json
+
+        config = json.loads((ROOT / ".obsidian/plugins/obsidian-local-rest-api/data.example.json").read_text())
+        self.assertFalse(config["enableInsecureServer"])
+        self.assertIn("REPLACE_WITH_LOCAL_ONLY_SECRET", config["apiKey"])
+        plugins = json.loads((ROOT / ".obsidian/community-plugins.json").read_text())
+        self.assertIn("obsidian-local-rest-api", plugins)
+
+    def test_obsidian_plugin_data_is_ignored_and_not_tracked(self):
+        for relative in (
+            '.obsidian/plugins/calendar/data.json',
+            '.obsidian/plugins/thino/data.json',
+            'wiki/inbox/api-note.md',
+            'wiki/meta/lint-report-2026-10-13.md',
+        ):
+            if relative.endswith('data.json'):
+                tracked = subprocess.run(
+                    ['git', 'ls-files', '--error-unmatch', relative], cwd=ROOT,
+                    capture_output=True, text=True,
+                )
+                self.assertNotEqual(tracked.returncode, 0, f'{relative} must not be tracked')
+            ignored = subprocess.run(
+                ['git', 'check-ignore', '--no-index', '-q', relative], cwd=ROOT,
+            )
+            self.assertEqual(ignored.returncode, 0, f'{relative} must be ignored')
 
 
 if __name__ == "__main__":

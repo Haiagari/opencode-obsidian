@@ -138,6 +138,51 @@ def validate_workflow(filepath):
 
     # 6. Validar active flag
     active = wf.get('active', False)
+    webhook_triggers = [
+        node.get('name', '<unnamed>') for node in nodes
+        if node.get('type', '').lower().endswith('.webhook')
+    ]
+    if webhook_triggers:
+        test(f'{rel}: workflow con webhook permanece inactivo', active is False,
+             f'webhook triggers={webhook_triggers!r}; implement receiver auth, payload limits and rate limiting first')
+    if name == 'Bunker AOC v4 Enterprise':
+        test(f'{rel}: AOC experimental permanece inactivo', active is False,
+             'no habilitar antes de implementar y probar autenticación y rate limiting')
+
+        decision_node = next((node for node in nodes if node.get('name') == 'Parse AI Decision'), None)
+        decision_code = (decision_node or {}).get('parameters', {}).get('jsCode', '')
+        test(f'{rel}: errores de triage van a revisión humana',
+             "let action = 'review';" in decision_code,
+             'malformed or unavailable AI output must not auto-create an issue')
+        test(f'{rel}: triage valida acción y confianza',
+             'allowedActions.includes(parsed.action)' in decision_code
+             and 'typeof parsedConfidence === \'number\'' in decision_code
+             and 'Number.isFinite(parsedConfidence)' in decision_code,
+             'only supported actions and finite confidence values may be routed')
+
+        env_path = os.path.join(os.path.dirname(WORKFLOWS_DIR), '.env.example')
+        try:
+            with open(env_path, encoding='utf-8') as env_file:
+                env_example = env_file.read()
+        except OSError as exc:
+            env_example = ''
+            test(f'{rel}: existe ejemplo de configuración', False, str(exc))
+
+        for unsupported in ('AOC_DRY_RUN', 'AOC_RATE_LIMIT_PER_MINUTE',
+                            'AOC_MAX_PAYLOAD_BYTES', 'AOC_MEMORY_LIMIT'):
+            test(f'{rel}: no promete el control no implementado {unsupported}',
+                 unsupported not in env_example,
+                 'remove example settings that the workflow does not read')
+
+    if name == 'Bunker Health Check':
+        node_types = [node.get('type', '') for node in nodes]
+        test(f'{rel}: health check usa disparo manual',
+             'n8n-nodes-base.manualTrigger' in node_types,
+             f'tipos={node_types}')
+        test(f'{rel}: health check no simula monitoreo programado',
+             'n8n-nodes-base.scheduleTrigger' not in node_types,
+             f'tipos={node_types}')
+
     # No falla, solo informa
     if '-v' in sys.argv:
         status = '🟢 ACTIVO' if active else '⚪ inactivo'

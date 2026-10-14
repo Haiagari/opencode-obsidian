@@ -1,40 +1,62 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-# bunker-ingest.sh — Procesa una fuente y la integra al Bunker con sanitización defensiva
-# Uso: ./bin/bunker-ingest.sh <ruta_al_archivo_o_url>
+# Stage and sanitize a local source file. URL ingestion is handled by wiki-ingest.
+# Usage: ./bin/bunker-ingest.sh <local-file>
 
-VAULT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VAULT_DIR="${BUNKER_HOME:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 SOURCE="${1:-}"
 
-if [ -z "$SOURCE" ]; then
-    echo "❌ Error: Debes proporcionar una fuente (archivo o URL)."
-    echo "Uso: $0 <archivo_o_url>"
+if [[ -z "$SOURCE" ]]; then
+    echo "Error: provide a local source file." >&2
+    echo "Usage: $0 <local-file>" >&2
+    exit 2
+fi
+
+case "$SOURCE" in
+    http://*|https://*)
+        echo "URL ingestion is not supported by this CLI. Use the wiki-ingest skill in OpenCode." >&2
+        exit 2
+        ;;
+esac
+
+if [[ ! -f "$SOURCE" ]]; then
+    echo "Error: source file not found: $SOURCE" >&2
+    exit 2
+fi
+
+FILENAME="$(basename -- "$SOURCE")"
+mkdir -p "${VAULT_DIR}/.raw"
+RAW_DEST="${VAULT_DIR}/.raw/$FILENAME"
+
+if [[ -e "$RAW_DEST" ]]; then
+    echo "Error: refusing to overwrite existing staged source: .raw/$FILENAME" >&2
     exit 1
 fi
 
-echo "🧠 Iniciando ingestión de: $SOURCE"
+RAW_TEMP="$(mktemp "${RAW_DEST}.tmp.XXXXXX")"
+trap 'rm -f -- "$RAW_TEMP"' EXIT
 
-# 1. Mover a .raw y sanitizar si es un archivo local
-if [ -f "$SOURCE" ]; then
-    mkdir -p "${VAULT_DIR}/.raw"
-    FILENAME=$(basename "$SOURCE")
-    RAW_DEST="${VAULT_DIR}/.raw/${FILENAME}"
-    
-    # Sanitizar contenido defensivamente contra prompt injections
-    python3 "${VAULT_DIR}/scripts/sanitize_ingest.py" "$SOURCE" --output "$RAW_DEST"
-    echo "📥 Archivo sanitizado y copiado a .raw/$FILENAME"
+python3 "${VAULT_DIR}/scripts/sanitize_ingest.py" "$SOURCE" --output "$RAW_TEMP"
+
+# Link creation is atomic and fails if another process created the destination.
+if ! ln -- "$RAW_TEMP" "$RAW_DEST"; then
+    echo "Error: could not stage source without overwriting .raw/$FILENAME" >&2
+    exit 1
 fi
+rm -f -- "$RAW_TEMP"
+RAW_TEMP=""
 
-# 2. Optional n8n notification. Ingestion never depends on the extension.
+echo "Sanitized source staged at .raw/$FILENAME"
+echo "This command only stages the file. Run the wiki-ingest skill in OpenCode to create wiki notes."
+
+# Optional notification. Its failure never removes or invalidates the staged file.
 if [[ "${BUNKER_N8N_ALERTS:-0}" == "1" ]]; then
-    if "${VAULT_DIR}/bin/bunker-alert.sh" "Bunker-Ingest" "INFO" "📥 NUEVA FUENTE DETECTADA: Se ha iniciado la ingestión de $SOURCE. Procesando entidades y conceptos..."; then
-        echo "📡 Optional n8n alert sent."
+    if "${VAULT_DIR}/bin/bunker-alert.sh" "Bunker-Ingest" "INFO" "Sanitized source staged: $FILENAME"; then
+        echo "Optional n8n notification sent."
     else
-        echo "⚠️ Ingestion completed; optional n8n alert failed." >&2
+        echo "Warning: source is staged, but the optional n8n alert failed." >&2
     fi
 else
-    echo "ℹ️ n8n notification skipped (set BUNKER_N8N_ALERTS=1 to opt in)."
+    echo "n8n notification skipped (set BUNKER_N8N_ALERTS=1 to opt in)."
 fi
-
-echo "✅ Proceso de ingestión iniciado. Esperando síntesis..."

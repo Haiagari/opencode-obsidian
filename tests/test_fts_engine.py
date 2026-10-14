@@ -92,11 +92,44 @@ Defensive sanitization strips prompt injections and adversarial directives.
         self.assertTrue(len(results) > 0)
         self.assertIn("architecture.md", results[0]['path'])
 
+    def test_content_change_with_preserved_mtime_is_reindexed(self):
+        fts_engine.build_or_update_index(vault_dir=self.test_dir, force=True)
+        original_stat = os.stat(self.note1)
+
+        with open(self.note1, 'w', encoding='utf-8') as f:
+            f.write("# Preserved timestamp regression\n\nKuroIndexSentinelUniqueTerm\n")
+        os.utime(self.note1, ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns))
+
+        result = fts_engine.build_or_update_index(vault_dir=self.test_dir, force=False)
+        self.assertEqual(result['indexed_or_updated'], 1)
+        self.assertEqual(result['skipped'], 1)
+
+        results = fts_engine.query_fts(
+            "KuroIndexSentinelUniqueTerm", top_k=5, vault_dir=self.test_dir
+        )
+        self.assertTrue(results)
+        self.assertIn("architecture.md", results[0]['path'])
+
     def test_status(self):
         fts_engine.build_or_update_index(vault_dir=self.test_dir, force=True)
         status = fts_engine.get_status(vault_dir=self.test_dir)
         self.assertTrue(status['exists'])
         self.assertEqual(status['total_pages'], 2)
+
+    def test_archived_notes_are_removed_from_search_index(self):
+        active_note = Path(self.wiki_dir) / 'old-security-note.md'
+        archive_note = Path(self.wiki_dir) / 'archive' / 'old-security-note.md'
+        archive_note.parent.mkdir(parents=True)
+        active_note.write_text(
+            '---\ntitle: Old note\n---\n\nArchiveOnlyKuroSentinel\n', encoding='utf-8'
+        )
+        fts_engine.build_or_update_index(vault_dir=self.test_dir, force=True)
+        self.assertTrue(fts_engine.query_fts('ArchiveOnlyKuroSentinel', vault_dir=self.test_dir))
+
+        active_note.rename(archive_note)
+        result = fts_engine.build_or_update_index(vault_dir=self.test_dir, force=False)
+        self.assertEqual(result['deleted'], 1)
+        self.assertFalse(fts_engine.query_fts('ArchiveOnlyKuroSentinel', vault_dir=self.test_dir))
 
 
 if __name__ == '__main__':

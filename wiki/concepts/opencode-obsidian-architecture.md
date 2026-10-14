@@ -1,58 +1,24 @@
 ---
 type: concept
-title: "opencode obsidian architecture"
-updated: 2026-05-14
+title: "OpenCode-Obsidian Architecture"
+updated: 2026-10-13
 status: active
+related:
+  - "[[_index]]"
+  - "[[vault-flow]]"
 ---
 
 # OpenCode-Obsidian Architecture
 
-**Status**: Active / Core
-**Type**: Architecture Decision
-**Parent**: [[_index]]
+The project is a local-first knowledge workflow built around an Obsidian vault. Markdown is the source of truth; OpenCode skills and local scripts support capture, organization, and retrieval. SQLite FTS5/BM25 is a local, rebuildable index. The Go capture API and n8n are optional extensions with separate boundaries.
 
-## Summary
-`opencode-obsidian` is a **Hard Detach** from the original `claude-obsidian` project, optimized specifically for the **OpenCode** agentic ecosystem. It implements the **LLM Wiki Pattern** to provide persistent, compounding knowledge across sessions.
+The canonical component map, data paths, and extension boundaries live in the [architecture guide](../../docs/architecture.md). For the user workflow, see [Use Bunker OS](../../docs/usage-guide.md); for safeguards and limits, see [Security boundaries](../../docs/security-boundaries.md).
 
-## Core Pillars
+## Core decisions
 
-### 1. Hard Detach & Identity
-- **Absolute Independence**: Removal of all Anthropic/Claude-specific dependencies and naming.
-- **Project Path**: `${BUNKER_HOME:-<path-to-opencode-obsidian>}`.
-- **Primary Agent**: OpenCode.
-
-### 2. Multi-Layer Knowledge (LLM Wiki Pattern)
-The knowledge base is structured to be token-efficient:
-1. **[[hot]]**: ~500 words. Loaded every session. High-priority context.
-2. **[[index]]**: The map of all knowledge. Used when `hot` isn't enough.
-3. **Individual Wiki Pages**: Detailed notes on specific concepts, entities, or sources.
-
-### 3. Agentic Skills
-Custom-built skills for OpenCode located in `~/.config/opencode/skills/`:
-- `wiki`: System orchestrator.
-- `wiki-ingest`: Source processor.
-- `wiki-query`: RAG-less knowledge retrieval.
-- `wiki-save`: Conversation persistence.
-- `wiki-lint`: Health and link maintenance.
-
-### 4. MCP Integration
-Uses `@bitbonsai/mcpvault` via `stdio` to allow the agent to:
-- Read/Write notes directly.
-- Search content using regex.
-- List directory structures.
-
-## File Structure
-- `.raw/`: Immutable source documents.
-- `wiki/`: AI-generated and human-refined knowledge.
-- `bin/`: Automation and setup scripts.
-- `_templates/`: Obsidian formatting templates.
-
-## Context Injection Strategy
-When an agent starts in a different project, it should refer to this vault via its `AGENTS.md` using the "Three-Step Context Read" protocol:
-1. Read `hot.md`.
-2. If unresolved, read `index.md`.
-3. If still unresolved, search/read specific pages.
-
----
-**Created**: 2026-04-19
-**Session**: [[purgado-de-referencias-y-renombramiento-de-carpeta-ra-z]]
+| Decision | Meaning |
+|---|---|
+| Markdown remains authoritative | The search database can be rebuilt from vault files |
+| Local capture stages for review | The Go API writes to `wiki/inbox/`; it does not create wiki pages |
+| Automation is optional | n8n is not required for normal vault use |
+| Sources remain untrusted | Sanitization is a heuristic and does not establish safety |

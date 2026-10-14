@@ -1,3 +1,11 @@
+---
+type: meta
+title: "Operation Log"
+updated: 2026-10-13
+tags: [meta, log]
+status: active
+---
+
 # Operation Log
 
 ## 2026-07-05 — Ingest: Immunefi bug bounty writeups

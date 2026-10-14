@@ -1,4 +1,4 @@
-# Local-first knowledge workflow test targets.
+# Local-first knowledge workflow and security regression test targets.
 .PHONY: test test-core test-extensions test-workflows test-wiki test-scripts test-retrieve test-yaml test-unit test-all help
 
 help:
@@ -6,7 +6,7 @@ help:
 	@echo "  make test-core       Core checks; no Docker or n8n configuration required"
 	@echo "  make test-extensions Optional n8n workflow/config validation"
 	@echo "  make test            Core plus extension checks"
-	@echo "  make test-unit       Python unit tests"
+	@echo "  make test-unit       Python unit and local lifecycle tests"
 	@echo "  make test-retrieve   BM25 retrieval checks"
 
 test: test-core test-extensions
@@ -39,10 +39,10 @@ test-scripts:
 	@echo ""
 
 test-yaml:
-	@python3 -c "import yaml; yaml.safe_load(open('.github/workflows/test.yml')); print('  ✅ CI YAML valid')" 2>/dev/null || echo "  ⚠️  yaml no disponible (pip install pyyaml)"
+	@python3 -c "import yaml; yaml.safe_load(open('.github/workflows/test.yml')); print('  ✅ CI YAML valid')"
 
 test-yaml-extensions:
-	@python3 -c "import yaml; yaml.safe_load(open('extensions/n8n/docker-compose.yml')); print('  ✅ n8n compose YAML valid')" 2>/dev/null || echo "  ⚠️  yaml no disponible"
+	@python3 -c "import yaml; yaml.safe_load(open('extensions/n8n/docker-compose.yml')); print('  ✅ n8n compose YAML valid')"
 
 test-retrieve:
 	@echo "========================================"

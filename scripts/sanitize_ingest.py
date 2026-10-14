@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""sanitize_ingest.py — Defensive Prompt Injection & Payload Sanitizer for Bunker OS Ingestion.
+"""sanitize_ingest.py — Best-effort text sanitizer for Bunker OS ingestion.
 
-Zero external dependencies.
-Sanitizes raw ingest content by:
+Zero external dependencies. This heuristic is not a complete prompt-injection detector,
+HTML security parser, or trust boundary. Sanitized content remains untrusted.
+Transforms raw ingest content by:
 - Stripping zero-width unicode characters and invisible control characters.
-- Defanging and neutralizing prompt injection attacks (e.g. "ignore previous instructions", "disregard prior directives", "system prompt:", "assistant override").
-- Stripping hidden markdown directives, malicious HTML comments, and dangerous tags (<script>, <iframe>, <object>, etc.).
+- Rewriting a limited set of known instruction-override patterns (not comprehensive prompt-injection detection).
+- Removing selected suspicious comments and HTML tag patterns (not a general-purpose HTML sanitizer).
 - Safely escaping nested/malformed wikilinks (`[[...]]`) and payload tags.
 """
 
@@ -48,7 +49,7 @@ def strip_zero_width(text: str) -> Tuple[str, int]:
 
 
 def sanitize_prompt_injections(text: str) -> Tuple[str, List[str]]:
-    """Detects and defangs prompt injection patterns."""
+    """Defangs a limited set of known instruction-override text patterns."""
     detected = []
     cleaned = text
     for pat, replacement in INJECTION_PATTERNS:

@@ -1,254 +1,70 @@
-# opencode-obsidian — Install Guide
+# Install Bunker OS
 
-**OpenCode + Obsidian Knowledge Companion**
-Version 1.2.0 · [github.com/AgriciDaniel/opencode-obsidian](https://github.com/AgriciDaniel/opencode-obsidian)
+Bunker OS is an Obsidian vault that can be used on its own. OpenCode is optional; it adds the bundled skills and agent workflows.
 
----
+## Requirements
 
-## What is opencode-obsidian?
+- Git, to get the repository
+- Obsidian, to open and edit the vault
+- OpenCode, only if you want to use the included agent workflows
 
-opencode-obsidian is a OpenCode Code plugin + Obsidian vault that builds and maintains a persistent, compounding knowledge base. Every source you add gets processed into cross-referenced wiki pages. Every question you ask pulls from everything that has been read. Knowledge compounds like interest.
+Python 3.10+, Go, and Docker are needed only for specific tools described in their reference guides.
 
-Built on Andrej Karpathy's LLM Wiki pattern.
+## Install the repository as a vault
 
----
-
-## Prerequisites
-
-| Tool | How to get it | Notes |
-|------|--------------|-------|
-| **OpenCode Code** | `npm install -g @anthropic-ai/claude-code` | Free tier available |
-| **Obsidian** | [obsidian.md](https://obsidian.md) | Free |
-| **Git** | Pre-installed on most systems | For Option 1 |
-
----
-
-## Installation
-
-### Option 1 — Clone as vault (recommended)
-
-Full setup in under 2 minutes.
+Clone the repository and run its setup script:
 
 ```bash
-git clone https://github.com/AgriciDaniel/opencode-obsidian
+git clone https://github.com/Haiagari/opencode-obsidian.git
 cd opencode-obsidian
 bash bin/setup-vault.sh
 ```
 
-Then in Obsidian: **Manage Vaults → Open folder as vault → select `opencode-obsidian/`**
+The script creates local vault folders and Obsidian settings. If the checked-in Excalidraw plugin manifest is present but its runtime is missing, setup downloads the pinned release and verifies its SHA-256 checksum.
 
-Open OpenCode Code in the same folder and type `/wiki`.
+In Obsidian, choose **Manage Vaults → Open folder as vault** and select the cloned `opencode-obsidian` folder. To use the agent workflows, open that same folder in OpenCode and follow the repository's [`AGENTS.md`](../AGENTS.md) and [`WIKI.md`](../WIKI.md).
 
-### Option 2: Install as OpenCode Code plugin
+The setup script currently prints some legacy Claude Code instructions at the end. They are not the setup path for this repository; use OpenCode as described above. The script does not install a Claude Code plugin.
 
-Plugin installation in OpenCode Code is a two-step process. First add the marketplace catalog, then install the plugin from it.
+## Use an existing vault
 
-```bash
-# Step 1: add the marketplace
-claude plugin marketplace add AgriciDaniel/opencode-obsidian
-
-# Step 2: install the plugin
-claude plugin install opencode-obsidian@opencode-obsidian-marketplace
-```
-
-Verify the install:
-```bash
-claude plugin list
-```
-
-In any OpenCode Code session: type `/wiki` and OpenCode walks you through vault setup.
-
-### Option 3 — Add to an existing vault
-
-Copy `WIKI.md` from this repo into your vault root. Then paste into OpenCode:
-
-```
-Read WIKI.md in this project. Then:
-1. Check if Obsidian is installed. If not, install it.
-2. Check if the Local REST API plugin is running on port 27124.
-3. Configure the MCP server.
-4. Ask me ONE question: "What is this vault for?"
-Then scaffold the full wiki structure.
-```
-
----
-
-## Optional Extensions
-
-The core knowledge workflow does not require Docker or n8n. The optional n8n/AOC extension is in `extensions/n8n/` and documented in [N8N-SETUP.md](N8N-SETUP.md). Optional host/repository utilities are in `extensions/operations/`; their former `bin/` commands remain compatibility shims. Review `extensions/operations/README.md` before using commands that affect Git, GitHub, or host configuration.
-
-## First Steps
-
-### 1. Scaffold the vault
-
-Type `/wiki` in OpenCode Code. OpenCode will:
-- Detect your vault mode (website, GitHub, business, personal, research, or book/course)
-- Create the folder structure and core wiki pages
-- Set up `wiki/index.md`, `wiki/hot.md`, `wiki/log.md`, and `wiki/overview.md`
-
-### 2. Drop your first source
-
-Put any document into `.raw/`:
-- PDFs, markdown files, transcripts, articles, URLs
-
-Tell OpenCode: `ingest [filename]`
-
-OpenCode reads the source and creates 8–15 cross-referenced wiki pages.
-
-### 3. Ask questions
-
-```
-what do you know about [topic]?
-```
-
-OpenCode reads the hot cache, scans the index, drills into relevant pages, and gives a synthesized answer — citing specific wiki pages, not training data.
-
----
-
-## Commands Reference
-
-| Command | What OpenCode does |
-|---------|-----------------|
-| `/wiki` | Setup check, scaffold, or continue where you left off |
-| `ingest [file]` | Read source, create 8–15 wiki pages, update index and log |
-| `ingest all of these` | Batch process multiple sources, then cross-reference |
-| `what do you know about X?` | Read index → relevant pages → synthesize answer |
-| `/save` | File the current conversation as a wiki note |
-| `/save [name]` | Save with a specific title |
-| `/autoresearch [topic]` | Autonomous research loop: search, fetch, synthesize, file |
-| `/canvas` | Open or create a visual canvas |
-| `/canvas add image [path]` | Add an image to the canvas |
-| `/canvas add text [content]` | Add a markdown text card |
-| `/canvas add pdf [path]` | Add a PDF document |
-| `/canvas add note [page]` | Pin a wiki page as a linked card |
-| `lint the wiki` | Health check: orphans, dead links, gaps |
-| `update hot cache` | Refresh `hot.md` with latest context summary |
-
----
-
-## Plugins (pre-installed)
-
-Enable in **Settings → Community Plugins**:
-
-| Plugin | Purpose |
-|--------|---------|
-| **Calendar** | Right-sidebar calendar with word count and task dots |
-| **Thino** | Quick memo capture panel |
-| **Excalidraw** | Freehand drawing, image annotation |
-| **Banners** | Header images via `banner:` frontmatter |
-
-Also install from Community Plugins:
-
-| Plugin | Purpose |
-|--------|---------|
-| **Dataview** | Powers the dashboard queries |
-| **Templater** | Auto-fills frontmatter from templates |
-| **Obsidian Git** | Auto-commits vault every 15 minutes |
-
----
-
-## CSS Snippets
-
-Three snippets are auto-enabled by `setup-vault.sh`:
-
-| Snippet | Effect |
-|---------|--------|
-| `vault-colors` | Color-codes wiki folders in the file explorer |
-| `ITS-Dataview-Cards` | Turns Dataview queries into visual card grids |
-| `ITS-Image-Adjustments` | Fine-grained image sizing — append `\|100` to embeds |
-
----
-
-## Six Wiki Modes
-
-| Mode | Use when |
-|------|---------|
-| **A: Website** | Sitemap, content audit, SEO wiki |
-| **B: GitHub** | Codebase map, architecture wiki |
-| **C: Business** | Project wiki, competitive intelligence |
-| **D: Personal** | Second brain, goals, journal synthesis |
-| **E: Research** | Papers, concepts, thesis |
-| **F: Book/Course** | Chapter tracker, course notes |
-
-Modes can be combined.
-
----
-
-## MCP Setup (Optional)
-
-MCP lets OpenCode read and write vault notes directly without copy-paste.
-
-**Option A — REST API:**
-
-1. Install the **Local REST API** plugin in Obsidian
-2. Copy your API key
-3. Run:
+The script can create the basic vault folders in another location:
 
 ```bash
-claude mcp add-json obsidian-vault '{
-  "type": "stdio",
-  "command": "uvx",
-  "args": ["mcp-obsidian"],
-  "env": {
-    "OBSIDIAN_API_KEY": "your-key",
-    "OBSIDIAN_HOST": "127.0.0.1",
-    "OBSIDIAN_PORT": "27124",
-    "NODE_TLS_REJECT_UNAUTHORIZED": "0"
-  }
-}' --scope user
+bash /path/to/opencode-obsidian/bin/setup-vault.sh /path/to/your-vault
 ```
 
-**Option B — Filesystem (no plugin needed):**
+Review `AGENTS.md` and `WIKI.md` before using the bundled workflows or scripts against a separate vault. They may create or update notes there.
+
+## Make your first note
+
+Open the [daily use guide](usage-guide.md) for the capture, review, filing, and search workflow. It includes the commands for ingesting a local source and searching the vault.
+
+## Privacy and Git
+
+This repository is public. Ignore rules only apply to new, untracked files; they do not encrypt files or erase content already present in Git history. Check tracked paths before adding private material:
 
 ```bash
-claude mcp add-json obsidian-vault '{
-  "type": "stdio",
-  "command": "npx",
-  "args": ["-y", "@bitbonsai/mcpvault@latest", "/path/to/your/vault"]
-}' --scope user
+git ls-files .raw wiki/sources
+git status --short
 ```
 
----
+Never put credentials, private source documents, or personal notes in tracked files. See [Security boundaries](security-boundaries.md) for the complete safeguards and limitations.
 
-## Troubleshooting
+## Optional tools
 
-| Problem | Fix |
-|---------|-----|
-| `/wiki` says "not found" | Make sure `opencode-obsidian` plugin is enabled: `claude plugin list` |
-| Graph colors reset after closing Obsidian | Open Graph view → gear → Color groups → re-add once. Permanent after that. |
-| Excalidraw not loading | Run `bash bin/setup-vault.sh` to download `main.js` (8MB, not in git) |
-| Dashboard shows no results | Install the **Dataview** plugin from Community Plugins |
-| Hot cache not loading at session start | Check hooks: `claude hooks list` — SessionStart hook should be present |
+- [Local Ingest API](local-ingest-api.md) — authenticated, loopback-only capture for short notes.
+- [n8n extension](N8N-SETUP.md) — optional automation that requires Docker.
+- [Operations tools](../extensions/operations/README.md) — host and repository utilities; read their guidance before running them.
 
----
+## Validate the repository
 
-## Cross-Project Power Move
+Run checks from the repository root when contributing:
 
-Point any OpenCode Code project at this vault. Add to that project's `CLAUDE.md`:
-
-```markdown
-## Wiki Knowledge Base
-Path: ~/path/to/opencode-obsidian
-
-When you need context not in this project:
-1. Read wiki/hot.md first (recent context cache)
-2. If not enough, read wiki/index.md
-3. If you need domain details, read the relevant wiki page
-
-Do NOT read the wiki for general coding questions.
+```bash
+make test-core
+make test-extensions
+make test
 ```
 
-Your executive assistant, coding projects, and content workflows all draw from the same knowledge base.
-
----
-
-## Support
-
-- **GitHub**: [github.com/AgriciDaniel/opencode-obsidian](https://github.com/AgriciDaniel/opencode-obsidian)
-- **Issues**: [github.com/AgriciDaniel/opencode-obsidian/issues](https://github.com/AgriciDaniel/opencode-obsidian/issues)
-- **Community**: [AI Marketing Hub on Skool](https://skool.com)
-
----
-
-*Built by [AgriciDaniel](https://github.com/AgriciDaniel) / AI Marketing Hub*
-*Based on Andrej Karpathy's LLM Wiki pattern*
+See [CONTRIBUTING](../CONTRIBUTING.md) for the contribution workflow.

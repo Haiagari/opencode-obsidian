@@ -132,8 +132,13 @@ def build_or_update_index(vault_dir: Optional[str] = None, force: bool = False) 
     conn = sqlite3.connect(db_path)
     init_db(conn)
 
-    files = glob(os.path.join(v, 'wiki', '**', '*.md'), recursive=True)
-    files = [f for f in files if '/meta/' not in f and f.endswith('.md')]
+    wiki_root = Path(v) / 'wiki'
+    files = []
+    for candidate in glob(os.path.join(str(wiki_root), '**', '*.md'), recursive=True):
+        relative_parts = Path(candidate).relative_to(wiki_root).parts
+        parent_names = {part.lower() for part in relative_parts[:-1]}
+        if 'meta' not in parent_names and 'archive' not in parent_names:
+            files.append(candidate)
 
     # Get currently indexed files
     cur = conn.cursor()
@@ -149,16 +154,14 @@ def build_or_update_index(vault_dir: Optional[str] = None, force: bool = False) 
         active_paths.add(rel)
         mtime = os.path.getmtime(filepath)
 
-        # Check if changed
+        # The content hash is authoritative: mtimes can be preserved by tools,
+        # restored from archives, or have too little filesystem precision.
         if not force and rel in existing_meta:
             prev_mtime, prev_hash = existing_meta[rel]
-            if abs(mtime - prev_mtime) < 1e-4:
-                skipped += 1
-                continue
             curr_hash = compute_file_hash(filepath)
             if curr_hash == prev_hash:
-                # Update mtime only
-                conn.execute("UPDATE file_meta SET mtime = ? WHERE path = ?", (mtime, rel))
+                if mtime != prev_mtime:
+                    conn.execute("UPDATE file_meta SET mtime = ? WHERE path = ?", (mtime, rel))
                 skipped += 1
                 continue
         else:

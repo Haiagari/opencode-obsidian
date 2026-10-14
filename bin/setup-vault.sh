@@ -78,10 +78,34 @@ EOF
 # ── 5. Download Excalidraw main.js (8MB, not in git) ─────────────────────────
 EXCALIDRAW="$OBSIDIAN/plugins/obsidian-excalidraw-plugin"
 if [ -f "$EXCALIDRAW/manifest.json" ] && [ ! -f "$EXCALIDRAW/main.js" ]; then
-  echo "Downloading Excalidraw main.js (~8MB)..."
-  curl -sS -L \
-    "https://github.com/zsviczian/obsidian-excalidraw-plugin/releases/latest/download/main.js" \
-    -o "$EXCALIDRAW/main.js"
+  EXCALIDRAW_VERSION="2.22.0"
+  EXCALIDRAW_SHA256="8f7d5dc538228020805a255db9615ba2fdb82a9c0e6081f1b37ee7c2750ab37e"
+  MANIFEST_VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$EXCALIDRAW/manifest.json")"
+  if [ "$MANIFEST_VERSION" != "$EXCALIDRAW_VERSION" ]; then
+    echo "Error: Excalidraw manifest is $MANIFEST_VERSION but setup pins $EXCALIDRAW_VERSION. Update the release pin and checksum before downloading." >&2
+    exit 1
+  fi
+  echo "Downloading pinned Excalidraw $EXCALIDRAW_VERSION main.js (~8MB)..."
+  EXCALIDRAW_TEMP="$(mktemp "$EXCALIDRAW/main.js.tmp.XXXXXX")"
+  trap 'rm -f -- "$EXCALIDRAW_TEMP"' EXIT
+  curl --fail --show-error --silent --location \
+    "https://github.com/zsviczian/obsidian-excalidraw-plugin/releases/download/$EXCALIDRAW_VERSION/main.js" \
+    -o "$EXCALIDRAW_TEMP"
+  ACTUAL_SHA256="$(python3 - "$EXCALIDRAW_TEMP" <<'PYTHON'
+import hashlib, sys
+h = hashlib.sha256()
+with open(sys.argv[1], 'rb') as artifact:
+    for chunk in iter(lambda: artifact.read(1024 * 1024), b''):
+        h.update(chunk)
+print(h.hexdigest())
+PYTHON
+)"
+  if [ "$ACTUAL_SHA256" != "$EXCALIDRAW_SHA256" ]; then
+    echo "Error: Excalidraw checksum mismatch; the downloaded file was discarded." >&2
+    exit 1
+  fi
+  mv -- "$EXCALIDRAW_TEMP" "$EXCALIDRAW/main.js"
+  trap - EXIT
   echo "✓ Excalidraw main.js downloaded"
 elif [ -f "$EXCALIDRAW/main.js" ]; then
   echo "✓ Excalidraw main.js already present"

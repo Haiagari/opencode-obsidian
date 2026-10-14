@@ -84,7 +84,7 @@ In `~/.config/opencode/opencode.json`:
   "mcp": {
     "obsidian-vault": {
       "type": "local",
-      "command": ["npx", "-y", "@bitbonsai/mcpvault@latest", "/absolute/path/to/your/vault"],
+      "command": ["npx", "-y", "@bitbonsai/mcpvault@0.16.0", "/absolute/path/to/your/vault"],
       "enabled": true
     }
   }

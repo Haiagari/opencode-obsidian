@@ -99,9 +99,9 @@ echo ""
 
 # === 5. Go source check ===
 echo "--- Go Source ---"
-go_count=$(ls "${VAULT_DIR}"/bin/*.go 2>/dev/null | wc -l)
+go_count=$(find "${VAULT_DIR}/bin" -maxdepth 1 -type f -name '*.go' ! -name '*_test.go' 2>/dev/null | wc -l)
 if [ "$go_count" -gt 0 ]; then
-    readarray -t go_files < <(ls "${VAULT_DIR}"/bin/*.go 2>/dev/null)
+    readarray -t go_files < <(find "${VAULT_DIR}/bin" -maxdepth 1 -type f -name '*.go' ! -name '*_test.go' | sort)
     for f in "${go_files[@]}"; do
         name=$(basename "$f")
         if command -v go &>/dev/null; then
@@ -114,6 +114,13 @@ if [ "$go_count" -gt 0 ]; then
             test "${name} go vet" false "go no instalado"
         fi
     done
+    if command -v go &>/dev/null && [ -f "${VAULT_DIR}/bin/ingest_server_test.go" ]; then
+        if go test "${VAULT_DIR}/bin/ingest_server.go" "${VAULT_DIR}/bin/ingest_server_test.go"; then
+            test "ingest_server HTTP integration" true
+        else
+            test "ingest_server HTTP integration" false "Go ingest HTTP tests failed"
+        fi
+    fi
 else
     echo "  (no hay archivos Go para testear)"
 fi
